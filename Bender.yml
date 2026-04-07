@@ -9,7 +9,7 @@ package:
 
 dependencies:
   common_cells:         { git: "https://github.com/pulp-platform/common_cells.git",         version: 1.39.0 }
-  # obi:                  { git: "https://github.com/pulp-platform/obi.git",                  rev: 6a724da    } # 0.1.7+
+  obi:                  { git: "https://github.com/pulp-platform/obi.git",                  rev: 6a724da    } # 0.1.7+
 sources:
   # Source files grouped in levels. Files in level 0 have no dependencies on files in this
   # package. Files in level 1 only depend on files in level 0, files in level 2 on files in

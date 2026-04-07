@@ -1,24 +1,3 @@
-
-  /*  32bit data, 32bit address
-  stolen from CROC repo
-   This is how we would usually define interconnects using the typedef.svh macros
-   *
-   * `OBI_TYPEDEF_A_CHAN_T(mgr_obi_a_chan_t, MgrObiCfg.AddrWidth, MgrObiCfg.DataWidth, MgrObiCfg.IdWidth, logic [0:0])
-   * `OBI_TYPEDEF_DEFAULT_REQ_T(mgr_obi_req_t, mgr_obi_a_chan_t)
-   * `OBI_TYPEDEF_R_CHAN_T(mgr_obi_r_chan_t, MgrObiCfg.DataWidth, MgrObiCfg.IdWidth, logic [0:0])
-   * `OBI_TYPEDEF_RSP_T(mgr_obi_rsp_t, mgr_obi_r_chan_t)
-   *
-   * // Create types for OBI subordinates/slaves (out of the interconnect, into the device)
-   * localparam obi_pkg::obi_cfg_t SbrObiCfg = obi_pkg::mux_grow_cfg(MgrObiCfg, NumManagers);
-   * `OBI_TYPEDEF_A_CHAN_T(sbr_obi_a_chan_t, SbrObiCfg.AddrWidth, SbrObiCfg.DataWidth, SbrObiCfg.IdWidth, logic [0:0])
-   * `OBI_TYPEDEF_DEFAULT_REQ_T(sbr_obi_req_t, sbr_obi_a_chan_t)
-   * `OBI_TYPEDEF_R_CHAN_T(sbr_obi_r_chan_t, SbrObiCfg.DataWidth, SbrObiCfg.IdWidth, logic [0:0])
-   * `OBI_TYPEDEF_RSP_T(sbr_obi_rsp_t, sbr_obi_r_chan_t)
-   *
-   * // Register Interface configured as 32 bit data, 32 bit address width (4 byte enable bits)
-   * `REG_BUS_TYPEDEF_ALL(reg, logic[31:0], logic[31:0], logic[3:0]);
-   */
-
 `timescale 1ns / 1ps
 module tb_socc_on_croc;
 
@@ -29,19 +8,36 @@ module tb_socc_on_croc;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-  parameter int NUM_VECTOR  = 32;                   // number of vectors in stimuli
-
   parameter RESPONSE_FILE = "./output.bmp";
+  parameter RAM_INIT = "./stimuli/Untitled3.data";
+  // parameter RAM_INIT = "./stimuli/ram_init.bin";
 
-    localparam total_pixels_h = 16'd800;
-    localparam active_pixels_h = 16'd640;
-    localparam back_porch_h = 16'd48;
-    localparam h_sync_width = 16'd96;
+  // 32bit data, 32bit address
+  // stolen from CROC repo, to maximize compatibility...
+  localparam obi_pkg::obi_cfg_t ObiCfg = '{
+    UseRReady:   1'b0,
+    CombGnt:     1'b0,
+    AddrWidth:     32,
+    DataWidth:     32,
+    IdWidth:        1,
+    Integrity:   1'b0,
+    BeFull:      1'b1,
+    OptionalCfg:  '0
+  };
+  `OBI_TYPEDEF_A_CHAN_T(obi_a_chan_t, ObiCfg.AddrWidth, ObiCfg.DataWidth, ObiCfg.IdWidth, logic [0:0])
+  `OBI_TYPEDEF_DEFAULT_REQ_T(obi_req_t, obi_a_chan_t)
+  `OBI_TYPEDEF_R_CHAN_T(obi_r_chan_t, ObiCfg.DataWidth, ObiCfg.IdWidth, logic [0:0])
+  `OBI_TYPEDEF_RSP_T(obi_rsp_t, obi_r_chan_t)
 
-    localparam total_pixels_v = 16'd525;
-    localparam active_pixels_v = 16'd480;
-    localparam back_porch_v = 16'd33;
-    localparam v_sync_width = 16'd2;
+  localparam total_pixels_h = 16'd800;
+  localparam active_pixels_h = 16'd640;
+  localparam back_porch_h = 16'd48;
+  localparam h_sync_width = 16'd96;
+
+  localparam total_pixels_v = 16'd525;
+  localparam active_pixels_v = 16'd480;
+  localparam back_porch_v = 16'd33;
+  localparam v_sync_width = 16'd2;
 
 
   //------------------ Logic Wires ------------------//
@@ -51,9 +47,9 @@ module tb_socc_on_croc;
   logic       clk;
   logic       rst_n;
 
-
-    logic h_sync, v_sync;
-    logic [23:0] color;
+  logic enable;
+  logic h_sync, v_sync;
+  logic [23:0] color;
     
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
@@ -74,50 +70,69 @@ module tb_socc_on_croc;
   end
 
   //------------------ Design Under Test ------------------//
-  socc_on_croc #(.Width(24)) i_dut (
+  socc_on_croc #(
+    .ObiCfg(ObiCfg),
+    .obi_req_t(obi_req_t),
+    .obi_rsp_t(obi_rsp_t),
+    .ColorWidthBytes(3)
+    ) i_dut (
     .clk_i     (clk       ),
     .rst_ni    (rst_n     ),
-    .obi_req_o (),
-    .obi_rsp_i (),
+    .enable_i(enable),
+    .hsync_pol_i('b1),
+    .vsync_pol_i('b1),
     
+    .obi_req_o (obi_req),
+    .obi_rsp_i (obi_rsp),
+    
+
+
     .h_sync_o(h_sync),
     .v_sync_o(v_sync),
     .color_o(color)
   );
 
-initial begin : basic_test
-    eoc = 0;
-    $dumpfile("socc_on_croc.vcd");
-    $dumpvars(1,i_dut);
-    
-    save_image(RESPONSE_FILE);
+  initial begin : basic_test
+      eoc = 0;
+      $dumpfile("socc_on_croc.vcd");
+      $dumpvars(1,i_dut);
+      $timeformat(-9, 2, " ns", 20);
+      
+      enable = '0;
+      init_sram(RAM_INIT);
+      // todo there's a weird glitch going on we hold reset down for only one cycle
+      // before enabling ? See tb/tmp.sv
+      @(posedge clk);
+      #1;
+      enable = '1;
+      save_image(RESPONSE_FILE);
+      enable = '0;
+      eoc = 1;
 
-    eoc = 1;
-
-    // Finish recording the waveform
-    $dumpflush;
-    $finish(1);
-end
-  int fd;
-  localparam img_w = 800, img_h = 525, img_byte_per_pixel = 3;
+      // Finish recording the waveform
+      $dumpflush;
+      $finish(1);
+  end
+  localparam logic[31:0] img_w = 'd800, img_h = 'd525, img_byte_per_pixel = 'd3;
+  localparam logic[31:0] img_w_bytes = (img_byte_per_pixel * img_w + 3) / 4 * 4; //Round up each row to 4 bytes
   // pad w to 4 bytes
   localparam img_file_size = 14 + 40 + img_h * ((img_byte_per_pixel * img_w + 3) / 4 * 4);
-  int header_data [] = {
-    'h42, 'h4D,
-    img_file_size & 'hFF,
-    (img_file_size >> 8) & 'hFF,
-    (img_file_size >> 16) & 'hFF,
-    (img_file_size >> 24) & 'hFF,
+  byte header_data [] = {
+    8'h42, 8'h4D,
+    img_file_size[7:0],
+    img_file_size[15:8],
+    img_file_size[23:16],
+    img_file_size[31:24],
     
     0,0,0,0,
     14+40,0,0,0,
     
     // START DIB (40 byes)
     40,0,0,0,
-    img_w%256,img_w/256,0,0,
-    img_h%256,img_h/256,0,0,
-    1,0,    //Color Plane
-    img_byte_per_pixel*8,0,   //Bits per Pixel
+    img_w[7:0],img_w[15:8],img_w[23:16],img_w[31:24],
+    img_h[7:0],img_h[15:8],img_h[23:16],img_h[31:24],
+    8'b1,8'b0,    //Color Plane
+    8'(img_byte_per_pixel*8),0,   //Bits per Pixel
     0,0,0,0,
     0,0,0,0,
     0,0,0,0,//Pixel per meter
@@ -128,8 +143,10 @@ end
   int img_data [img_h][img_w];
 
   //------------------ Response Check ------------------//
-  task save_image(input string file_name);
+  task automatic save_image(input string file_name);
+      int fd;
       @(negedge v_sync);
+      // TODO Is this aquisition delay correct...?
       #(T_ACQ_DEL);
       for(int y = 0; y < img_h; y++) begin
           for(int x = 0; x < img_w; x++) begin
@@ -138,7 +155,7 @@ end
             end else if (h_sync == 'b0) begin
               img_data[y][x] = 'h0;
             end else begin
-              img_data[y][x] = color;
+              img_data[y][x] = 32'(color);
             end
 
             #(T_CLK);
@@ -159,14 +176,90 @@ end
       for(int y = img_h - 1; y >= 0; y--) begin
           for(int x = 0; x < img_w; x++) begin
             for(int i = 0; i < img_byte_per_pixel; i++) begin
-              $fwrite(fd, "%c", img_data[y][x] >> (i * 8));
+              $fwrite(fd, "%c", 8'(img_data[y][x] >> (i * 8)));
             end
           end
-          for(int i = 0; i < (img_byte_per_pixel * img_w + 3) / 4 * 4 - img_byte_per_pixel * img_w; i++) begin
-            $fwrite(fd, "%c", 0);
+          for(int i = 0; i < img_w_bytes - img_byte_per_pixel * img_w; i++) begin
+            $fwrite(fd, "%c", 8'b0);
           end
       end
       $fclose(fd);
   endtask //save_image
+
+  obi_req_t obi_req;
+  obi_rsp_t obi_rsp;
+  localparam RAM_SIZE_BYTES = 1 << 21;
+  byte data [RAM_SIZE_BYTES];
+  
+  struct packed {
+    logic req_i;
+    logic we_i;
+    logic [31:0] addr_i;
+    logic [31:0] wdata_i;
+    logic [3:0] be_i;
+
+    logic gnt_o;
+    logic [31:0] rdata_o;
+  } sram_shim;
+
+  obi_sram_shim #(
+    .ObiCfg(ObiCfg),
+    .obi_req_t(obi_req_t),
+    .obi_rsp_t(obi_rsp_t)
+    ) i_sram_obi (
+    .clk_i(clk),
+    .rst_ni(rst_n),
+
+    .obi_req_i(obi_req),
+    .obi_rsp_o(obi_rsp),
+
+    .req_o(sram_shim.req_i),
+    .we_o(sram_shim.we_i),
+    .addr_o(sram_shim.addr_i),
+    .wdata_o(sram_shim.wdata_i),
+    .be_o(sram_shim.be_i),
+
+    .gnt_i(sram_shim.gnt_o),
+    .rdata_i(sram_shim.rdata_o)
+  );
+
+  logic active_request_q, active_request_d;
+  logic [ObiCfg.AddrWidth-1:0] request_addr_q, request_addr_d;
+  
+  `FF(active_request_q, active_request_d, 'b0, clk, rst_n);
+  `FF(request_addr_q, request_addr_d, 'b0, clk, rst_n);
+  
+  assign sram_shim.gnt_o = active_request_q;
+  
+  genvar i;
+  generate
+    for(i = 0; i < ObiCfg.AddrWidth/8; i++) begin
+      assign sram_shim.rdata_o[((i+1)*8-1):(i*8)] = request_addr_q + i < RAM_SIZE_BYTES ? data[request_addr_q + i] : 'haa;
+      // assign sram_shim.rdata_o[((i+1)*8-1):(i*8)] = request_addr_q + i;
+      // sram_shim.rdata_o[i] = request_addr_q;
+    end
+  endgenerate
+
+  always_comb begin : sram_backend
+    active_request_d = sram_shim.req_i;
+    request_addr_d = sram_shim.addr_i;
+  end
+
+  task automatic init_sram(input string file_name);
+    int fd;
+    // Use this in bash to populate the binary file for testing
+    // for i in {0..255}; do printf \\x$(printf '%x' $i) >> stimuli/ram_init.bin; done
+    int errcode;
+    fd = $fopen (file_name, "rb");
+    errcode = $fread(data, fd);
+    if (errcode == 0) $error("Could not read data, %x", errcode);
+    $fclose(fd);
+    for(int i = 10; i < 650; i++) begin
+      data[4*i] = 8'(i);
+      data[4*i+1] = 8'(i >> 8);
+      data[4*i+2] = 0;
+      data[4*i+3] = 0;
+    end
+  endtask //automatic
 
 endmodule

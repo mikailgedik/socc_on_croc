@@ -4,7 +4,7 @@ module vga_fsm #(
 ) (
     input logic clk_i,
     input logic rst_ni,
-
+    input logic enable_i,
     // One frame = (max_v_i + 1) * (max_h_i + 1) pixels!
     // Not the same with viewable_X_i; here, only specified value is shown (no +1)
     input logic [Width-1:0] max_v_i,
@@ -16,13 +16,14 @@ module vga_fsm #(
     input logic [Width-1:0] h_sync_end_i,
     input logic [Width-1:0] v_sync_start_i,
     input logic [Width-1:0] v_sync_end_i,
-
+    
+    input logic hsync_pol_i,
+    input logic vsync_pol_i,
+    
     output logic consume_one_o,
     output logic last_pixel_o,
     output logic h_sync_o,
-    output logic v_sync_o,
-    output logic [Width-1:0] h_pos_o,
-    output logic [Width-1:0] v_pos_o
+    output logic v_sync_o
 );
 
 /*
@@ -53,13 +54,21 @@ always_comb begin : counters
             counter_v_d = max_v_i;
         end
     end
+
+    if (!enable_i) begin
+        counter_h_d = max_h_i;
+        counter_v_d = max_v_i;
+    end
 end
 
-assign last_pixel_o = counter_h_q == 0 && counter_v_q == 0;
-assign consume_one_o = counter_h_q < viewable_h_i && counter_v_q < viewable_v_i;
-assign h_sync_o = !((counter_h_q >= h_sync_start_i) && (counter_h_q <= h_sync_end_i));
-assign v_sync_o = !((counter_v_q >= v_sync_start_i) && (counter_v_q <= v_sync_end_i));
-assign h_pos_o = counter_h_q;
-assign v_pos_o = counter_v_q;
+assign last_pixel_o = counter_h_q == 0 && counter_v_q == 0 && enable_i;
+assign consume_one_o = counter_h_q < viewable_h_i && counter_v_q < viewable_v_i && enable_i;
+assign h_sync_o = (((counter_h_q >= h_sync_start_i) && (counter_h_q <= h_sync_end_i)) ^ hsync_pol_i) && enable_i;
+assign v_sync_o = (
+    (   
+        (counter_v_q  == v_sync_start_i - 'b1 && counter_h_q > h_sync_end_i) ||
+        (counter_v_q >= v_sync_start_i && counter_v_q < v_sync_end_i)
+        || (counter_v_q == v_sync_end_i && counter_h_q <= h_sync_end_i)
+    ) ^ vsync_pol_i) && enable_i;
 
 endmodule
