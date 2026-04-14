@@ -17,6 +17,10 @@ sources:
   # Level 0
   - src/*.sv
 
+  - target: all(fpga, xilinx)
+    files:
+      - fpga/top.sv
   - target: all(verilator)
     files:
       - tb/*.sv
+    

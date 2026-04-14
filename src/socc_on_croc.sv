@@ -1,3 +1,6 @@
+`include "common_cells/registers.svh"
+`include "obi/typedef.svh"
+
 module socc_on_croc  #(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
@@ -32,8 +35,39 @@ localparam active_pixels_v = 16'd480;
 localparam back_porch_v = 16'd33;
 localparam v_sync_width = 16'd2;
 
+// We should be flushig once we read beyond the last pixel. See TODO
+typedef enum {FLUSHING, WORKING} state_t;
+
 
 logic h_sync, v_sync, consume_one, last_pixel;
+state_t state_q, state_d;
+logic [MAX_OUTSTANDING_REQS_BASE-1:0] outstanding_reqs_q, outstanding_reqs_d;
+logic [31:0] addr_req_q, addr_req_d;
+logic requesting_q, requesting_d;
+logic request_accepted;
+`FF(state_q, state_d, FLUSHING, clk_i, rst_ni);
+`FF(outstanding_reqs_q, outstanding_reqs_d, 'b0, clk_i, rst_ni);
+`FF(addr_req_q, addr_req_d, 'b0, clk_i, rst_ni);
+`FF(requesting_q, requesting_d, 'b0, clk_i, rst_ni);
+
+logic [ObiCfg.DataWidth-1:0] fifo_o;
+logic fifo_empty;
+logic fifo_full;
+logic [BUFFER_DEPTH_BASE:0] fifo_usage;
+
+
+logic [ObiCfg.DataWidth-1:0] barrel_pixel_q, barrel_pixel_d;
+logic [$clog2(ObiCfg.DataWidth/8)-1:0] barrel_shift_q, barrel_shift_d;
+logic fifo_pop_d, fifo_pop_q;
+logic loaded_q, loaded_d;
+logic sync_loss_d, sync_loss_q;
+
+`FF(barrel_pixel_q,barrel_pixel_d,'b0,clk_i,rst_ni);
+`FF(barrel_shift_q,barrel_shift_d,'b0,clk_i,rst_ni);
+`FF(fifo_pop_q,fifo_pop_d,'b0,clk_i,rst_ni);
+`FF(loaded_q,loaded_d,'b0,clk_i,rst_ni);
+`FF(sync_loss_q,sync_loss_d,'b0,clk_i,rst_ni);
+
 
 vga_fsm #(
     .Width(FSM_REG_WIDTH)
@@ -62,19 +96,6 @@ vga_fsm #(
 );
 assign h_sync_o = h_sync;
 assign v_sync_o = v_sync;
-
-// We should be flushig once we read beyond the last pixel. See TODO
-typedef enum {FLUSHING, WORKING} state_t;
-
-state_t state_q, state_d;
-logic [MAX_OUTSTANDING_REQS_BASE-1:0] outstanding_reqs_q, outstanding_reqs_d;
-logic [31:0] addr_req_q, addr_req_d;
-logic requesting_q, requesting_d;
-logic request_accepted;
-`FF(state_q, state_d, FLUSHING, clk_i, rst_ni);
-`FF(outstanding_reqs_q, outstanding_reqs_d, 'b0, clk_i, rst_ni);
-`FF(addr_req_q, addr_req_d, 'b0, clk_i, rst_ni);
-`FF(requesting_q, requesting_d, 'b0, clk_i, rst_ni);
 
 assign obi_req_o.a.addr = addr_req_q;
 assign obi_req_o.a.we = 'b0;
@@ -126,11 +147,6 @@ always_comb begin : obi_channels
   requesting_d = want_to_make_request;
 end
 
-logic [ObiCfg.DataWidth-1:0] fifo_o;
-logic fifo_empty;
-logic fifo_full;
-logic [BUFFER_DEPTH_BASE:0] fifo_usage;
-
 fifo_v3 #(
   .FALL_THROUGH('b0),
   .DATA_WIDTH(ObiCfg.DataWidth),
@@ -151,18 +167,6 @@ fifo_v3 #(
   .data_o(fifo_o),
   .pop_i(fifo_pop_d)
 );
-
-logic [ObiCfg.DataWidth-1:0] barrel_pixel_q, barrel_pixel_d;
-logic [$clog2(ObiCfg.DataWidth/8)-1:0] barrel_shift_q, barrel_shift_d;
-logic fifo_pop_d, fifo_pop_q;
-logic loaded_q, loaded_d;
-logic sync_loss_d, sync_loss_q;
-
-`FF(barrel_pixel_q,barrel_pixel_d,'b0,clk_i,rst_ni);
-`FF(barrel_shift_q,barrel_shift_d,'b0,clk_i,rst_ni);
-`FF(fifo_pop_q,fifo_pop_d,'b0,clk_i,rst_ni);
-`FF(loaded_q,loaded_d,'b0,clk_i,rst_ni);
-`FF(sync_loss_q,sync_loss_d,'b0,clk_i,rst_ni);
 
 always_comb begin : barrel_roll
   logic need_to_roll;

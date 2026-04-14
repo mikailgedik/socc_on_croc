@@ -1,3 +1,5 @@
+`include "common_cells/registers.svh"
+
 module vga_fsm #(
     // TODO optimize Width. 2^16 is too much, at 1920x1080 we have max 2200h 1125v pixels. 2^12 and 2^11 suffice
     parameter int Width = 16

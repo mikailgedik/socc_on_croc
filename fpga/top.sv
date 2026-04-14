@@ -1,10 +1,11 @@
 module top(
-    input logic sys_clk_pin,
+    input logic clk,
+    input logic [3:0] btn,
     input logic [3:0] sw,
     output logic [3:0] led,
-    output logic [7:0] ja,
+    output logic [7:0] ja
 );
-    assign led = sw;
+    `include "common_cells/registers.svh"
 
     localparam total_pixels_h = 16'd800;
     localparam active_pixels_h = 16'd640;
@@ -20,14 +21,29 @@ module top(
     
     logic consume_one, h_sync, v_sync;
     logic last_pixel;
+    logic rst_ni;
+    always_ff @( posedge clk ) begin : reset_sync
+        rst_ni <= ~btn[0];
+    end
 
-    logic [20:0] cnt_q, cnt_d;
-    `FF(cnt_q, cnt_d, 'b0, sys_clk_pin);
+    logic [64:0] cnt_q, cnt_d;
+    `FF(cnt_q, cnt_d, 'b0, clk, rst_ni);
+
+    // assign led[0] = cnt_q[0] | sw[0];
+    assign led[1] = clk;
+    assign led[2] = cnt_q[16];
+    assign led[3] = cnt_q[25];
+
+    assign led[0] = rst_ni;
+    // assign led[1] = btn[1] ^ sw[1];
+    // assign led[2] = btn[2] ^ sw[2];
+    // assign led[3] = btn[3] ^ sw[3];
+
 
     always_comb begin : color
-        cnt_d = cnt_d + 'b1;
+        cnt_d = cnt_q + 'b1;
         if (last_pixel) begin
-            cnt_d = 'b0;
+            // cnt_d = 'b0;
         end
         ja = cnt_q[7:0];
         if(cnt_q < 'd640) ja = 'hFF;
@@ -42,7 +58,7 @@ module top(
     vga_fsm #(
         .Width(16)
     ) vga_fsm (
-        .clk_i(sys_clk_pin),
+        .clk_i(clk),
         .rst_ni(rst_ni),
         .enable_i(sw[0]),
 

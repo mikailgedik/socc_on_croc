@@ -1,4 +1,8 @@
 `timescale 1ns / 1ps
+
+`include "common_cells/registers.svh"
+`include "obi/typedef.svh"
+
 module tb_socc_on_croc;
 
   //------------------ Structs and Parameters ------------------//
