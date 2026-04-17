@@ -33,6 +33,9 @@ module tb_socc_on_croc;
   `OBI_TYPEDEF_R_CHAN_T(obi_r_chan_t, ObiCfg.DataWidth, ObiCfg.IdWidth, logic [0:0])
   `OBI_TYPEDEF_RSP_T(obi_rsp_t, obi_r_chan_t)
 
+  obi_req_t obi_req;
+  obi_rsp_t obi_rsp;
+
   localparam total_pixels_h = 16'd800;
   localparam active_pixels_h = 16'd640;
   localparam back_porch_h = 16'd48;
@@ -190,8 +193,6 @@ module tb_socc_on_croc;
       $fclose(fd);
   endtask //save_image
 
-  obi_req_t obi_req;
-  obi_rsp_t obi_rsp;
   localparam RAM_SIZE_BYTES = 1 << 21;
   byte data [RAM_SIZE_BYTES];
   

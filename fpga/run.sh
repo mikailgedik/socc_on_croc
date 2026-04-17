@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-rm -rf build
+#rm -rf build
 
 DOCKER_ARGS="run --pull never -it --rm -m 8G -v $(pwd)/..:/mnt -v /chipdb:/chipdb -v $(pwd)/tmp:/tmp -u $(id -u)"
 
@@ -11,3 +11,5 @@ docker $DOCKER_ARGS $DOCKER_TAIL_COMMAND
 
 DOCKER_TAIL_COMMAND="regymm/openxc7:latest make -C /mnt/fpga -f Makefile"
 docker $DOCKER_ARGS $DOCKER_TAIL_COMMAND
+
+openFPGALoader --board zybo_z7_20 build/top.bit

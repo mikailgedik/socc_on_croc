@@ -2,6 +2,10 @@ set_property PACKAGE_PIN K17 [get_ports clk]
 set_property IOSTANDARD LVCMOS33 [get_ports clk]
 create_clock -add -name sys_clk_pin -period 8.00 -waveform {0 4} [get_ports { clk }]
 
+# TODO rename the ports, the are wrong
+create_generated_clock -name clk_out1 -source [get_ports clk] [get_pins i_clk_wiz/clk_out1]
+create_generated_clock -name clk_out2 -source [get_ports clk] [get_pins i_clk_wiz/clk_out2]
+
 ## Stolen from https://raw.githubusercontent.com/Digilent/digilent-xdc/refs/heads/master/Zybo-Z7-Master.xdc
 ## This file is a general .xdc for the Zybo Z7 Rev. B
 ## It is compatible with the Zybo Z7-20 and Zybo Z7-10

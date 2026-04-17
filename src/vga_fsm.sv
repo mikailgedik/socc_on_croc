@@ -41,8 +41,8 @@ module vga_fsm #(
 logic [Width-1:0] counter_h_q, counter_h_d, counter_v_q, counter_v_d;
 
 // TODO correctly "turn off" the machine with an enable_i
-`FF(counter_h_q, counter_h_d, ~'b0, clk_i, rst_ni);
-`FF(counter_v_q, counter_v_d, ~'b0, clk_i, rst_ni);
+`FF(counter_h_q, counter_h_d, ~'b0, clk_i, rst_ni)
+`FF(counter_v_q, counter_v_d, ~'b0, clk_i, rst_ni)
 
 always_comb begin : counters
     counter_h_d = counter_h_q - 'b1;
