@@ -20,6 +20,7 @@ sources:
   - target: all(fpga, xilinx)
     files:
       - fpga/top.sv
+      - fpga/plle2_adv.sv
   - target: any(verilator, vsim)
     files:
       - tb/*.sv

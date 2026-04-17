@@ -2,7 +2,7 @@
 
 #rm -rf build
 
-DOCKER_ARGS="run --pull never -it --rm -m 8G -v $(pwd)/..:/mnt -v /chipdb:/chipdb -v $(pwd)/tmp:/tmp -u $(id -u)"
+DOCKER_ARGS="run --pull never -it --rm -m 8G -v $(pwd)/..:/mnt -v /chipdb:/chipdb -u $(id -u)"
 
 bender script -t fpga -t xilinx -t tech_cells_generic_exclude_deprecated flist-plus | sed "s|$(cd .. && pwd)|..|g" > flist.txt
 

@@ -22,8 +22,8 @@ ${CHIPDB}:
 # we run this in parent directory to seeminglessly import user source files
 # otherwise have to parse user pattern and add ../
 ${BUILDDIR}/top.json: ${BUILDDIR} ${SOURCES} top.sv
-	# specify the xilinx libs manually, since read_verilog does not like it otherwise
-	yosys -p "plugin -i slang.so ; read_verilog -lib +/xilinx/cells_sim.v ;  read_slang -f flist.txt -top ${TOP}; hierarchy -check -top top ; hierarchy -top top -keep_positionals ; synth_xilinx  -abc9 -arch xc7 -noclkbuf; write_json ${BUILDDIR}/top.json"
+	# specify the xilinx libs manually, since read_slang does not like it otherwise (it is re-read anyways in synth_xilinx)
+	yosys -p "plugin -i slang.so ; read_verilog -lib +/xilinx/cells_sim.v ; read_verilog -lib +/xilinx/cells_xtra.v ; read_slang -f flist.txt -top ${TOP}; synth_xilinx -abc9 -arch xc7 -flatten; write_json ${BUILDDIR}/top.json"
 	# >> ${LOGFILE} 2>&1
 
 # The chip database only needs to be generated once
