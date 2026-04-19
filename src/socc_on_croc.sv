@@ -35,9 +35,10 @@ localparam active_pixels_v = 16'd480;
 localparam back_porch_v = 16'd33;
 localparam v_sync_width = 16'd2;
 
+localparam max_transactions = (ObiCfg.AddrWidth)'(ColorWidthBytes * active_pixels_h * active_pixels_v / (ObiCfg.DataWidth/8));
+
 // We should be flushig once we read beyond the last pixel. See TODO
 typedef enum {FLUSHING, WORKING} state_t;
-
 
 logic h_sync, v_sync, consume_one, last_pixel;
 state_t state_q, state_d;
@@ -45,10 +46,13 @@ logic [MAX_OUTSTANDING_REQS_BASE-1:0] outstanding_reqs_q, outstanding_reqs_d;
 logic [31:0] addr_req_q, addr_req_d;
 logic requesting_q, requesting_d;
 logic request_accepted;
+logic [31:0] transactions_d, transactions_q;
 `FF(state_q, state_d, FLUSHING, clk_i, rst_ni);
 `FF(outstanding_reqs_q, outstanding_reqs_d, 'b0, clk_i, rst_ni);
 `FF(addr_req_q, addr_req_d, 'b0, clk_i, rst_ni);
 `FF(requesting_q, requesting_d, 'b0, clk_i, rst_ni);
+`FF(transactions_q, transactions_d, 'b0, clk_i, rst_ni);
+
 
 logic [ObiCfg.DataWidth-1:0] fifo_o;
 logic fifo_empty;
@@ -105,16 +109,19 @@ assign obi_req_o.a.aid = 'b0;
 assign obi_req_o.a.a_optional = 'b0;
 assign obi_req_o.req = requesting_q;
 
-assign state_d = enable_i ? WORKING : FLUSHING;
 assign request_accepted = obi_req_o.req && obi_rsp_i.gnt;
 
 always_comb begin : obi_channels
+  logic entire_frame_requested;
   logic is_enough_space_left;
   logic is_enough_outstanding_request_left;
   logic want_to_make_request;
   outstanding_reqs_d = outstanding_reqs_q;
   addr_req_d = addr_req_q;
   requesting_d = requesting_q;
+  transactions_d = transactions_q;
+
+  entire_frame_requested = transactions_q + outstanding_reqs_q + request_accepted == max_transactions;
 
   // TODO is this a bug in fifo_v3 when DEPTH is a power of 2? since maybe buggy -> use fifo_full too
   // Check whether we want to make a request during the *next* cycle!
@@ -125,9 +132,10 @@ always_comb begin : obi_channels
   // - whether we're accepting a request this cycle
   is_enough_space_left = (fifo_usage) + (outstanding_reqs_q) + (request_accepted) != (1 << BUFFER_DEPTH_BASE) && !fifo_full; // TODO check signal widths...
   is_enough_outstanding_request_left = outstanding_reqs_q - obi_rsp_i.rvalid != ((1 << MAX_OUTSTANDING_REQS_BASE) - 1);
-  want_to_make_request = is_enough_outstanding_request_left && is_enough_space_left;
+  want_to_make_request = is_enough_outstanding_request_left && is_enough_space_left && !entire_frame_requested;
   
   want_to_make_request &= enable_i;
+  want_to_make_request &= state_q == WORKING;
 
   // subordinate may raise GNT without us requesting
   if (request_accepted) begin
@@ -142,6 +150,14 @@ always_comb begin : obi_channels
   if(obi_rsp_i.rvalid) begin
     // TODO assert that this only happens when outstanding_reqs_d is > 0
     outstanding_reqs_d--;
+    transactions_d++;
+  end
+
+  if(last_pixel) begin
+    transactions_d = 'b0;
+  end
+  if(entire_frame_requested) begin
+    addr_req_d = 'b0;
   end
 
   requesting_d = want_to_make_request;
@@ -197,7 +213,7 @@ always_comb begin : barrel_roll
     'b01: begin
       sync_loss_d = 'b1;
       // On sync loss: Stop pixel fetching etc etc
-      $display("TODO: %t, %d", $time, {loaded_q, consume_one});
+      // $display("TODO: %t, %d", $time, {loaded_q, consume_one});
     end
     'b11: begin
       if(data_spans_two_words && fifo_empty) begin
@@ -216,11 +232,29 @@ always_comb begin : barrel_roll
         barrel_shift_d += ($clog2(ObiCfg.DataWidth/8))'(ColorWidthBytes);
       end
     end
-    default: $error("This should not happen...");
+    // default: $error("This should not happen...");
   endcase
+
+  if(last_pixel) begin
+    sync_loss_d = 'b0;
+  end
   // TODO check sync loss here and adjust accordingly
   // If not enabled, clear
   loaded_d &= enable_i;
+end
+
+always_comb begin : state_checker
+  state_d = state_q;
+  
+  if (state_q == FLUSHING) begin
+    state_d = outstanding_reqs_q == 'b0 && last_pixel ? WORKING : FLUSHING;
+  end
+
+  if (sync_loss_d) begin
+    state_d = FLUSHING;
+  end
+
+  if(!enable_i) state_d = FLUSHING;
 end
 
 // Safeguard for debugging: generally hide pixel content if not showing anything

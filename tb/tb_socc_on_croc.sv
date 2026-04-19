@@ -12,7 +12,6 @@ module tb_socc_on_croc;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-  parameter RESPONSE_FILE = "./output.bmp";
   parameter RAM_INIT = "./stimuli/Untitled3.data";
   // parameter RAM_INIT = "./stimuli/ram_init.bin";
 
@@ -112,7 +111,10 @@ module tb_socc_on_croc;
       @(posedge clk);
       #1;
       enable = '1;
-      save_image(RESPONSE_FILE);
+      save_image($sformatf("./output-%03x.bmp", 0));
+      save_image($sformatf("./output-%03x.bmp", 1));
+      save_image($sformatf("./output-%03x.bmp", 2));
+      save_image($sformatf("./output-%03x.bmp", 3));
       enable = '0;
       eoc = 1;
 
@@ -153,8 +155,6 @@ module tb_socc_on_croc;
   task automatic save_image(input string file_name);
       int fd;
       @(negedge v_sync);
-      // TODO Is this aquisition delay correct...?
-      #(T_ACQ_DEL);
       for(int y = 0; y < img_h; y++) begin
           for(int x = 0; x < img_w; x++) begin
             if(v_sync == 'b0) begin
