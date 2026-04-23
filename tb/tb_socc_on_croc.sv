@@ -12,29 +12,6 @@ module tb_socc_on_croc;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-  // parameter RAM_INIT = "./stimuli/Untitled3.data";
-  parameter RAM_INIT = "./stimuli/ram_init.bin";
-
-  // 32bit data, 32bit address
-  // stolen from CROC repo, to maximize compatibility...
-  localparam obi_pkg::obi_cfg_t ObiCfg = '{
-    UseRReady:   1'b0,
-    CombGnt:     1'b0,
-    AddrWidth:     32,
-    DataWidth:     32,
-    IdWidth:        1,
-    Integrity:   1'b0,
-    BeFull:      1'b1,
-    OptionalCfg:  '0
-  };
-  `OBI_TYPEDEF_A_CHAN_T(obi_a_chan_t, ObiCfg.AddrWidth, ObiCfg.DataWidth, ObiCfg.IdWidth, logic [0:0])
-  `OBI_TYPEDEF_DEFAULT_REQ_T(obi_req_t, obi_a_chan_t)
-  `OBI_TYPEDEF_R_CHAN_T(obi_r_chan_t, ObiCfg.DataWidth, ObiCfg.IdWidth, logic [0:0])
-  `OBI_TYPEDEF_RSP_T(obi_rsp_t, obi_r_chan_t)
-
-  obi_req_t obi_req;
-  obi_rsp_t obi_rsp;
-
   localparam total_pixels_h = 16'd800;
   localparam active_pixels_h = 16'd640;
   localparam back_porch_h = 16'd48;
@@ -44,18 +21,15 @@ module tb_socc_on_croc;
   localparam active_pixels_v = 16'd480;
   localparam back_porch_v = 16'd33;
   localparam v_sync_width = 16'd2;
-  localparam bytes_per_pixel = 1;
 
   //------------------ Logic Wires ------------------//
 
   logic       eoc;            // End of computation
-
   logic       clk;
   logic       rst_n;
-
   logic enable;
   logic h_sync, v_sync;
-  logic [(bytes_per_pixel*8)-1:0] color;
+  logic [23:0] color;
 
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
@@ -76,64 +50,15 @@ module tb_socc_on_croc;
   end
 
   //------------------ Design Under Test ------------------//
-  socc_on_croc #(
-    .ObiCfg(ObiCfg),
-    .obi_req_t(obi_req_t),
-    .obi_rsp_t(obi_rsp_t),
-    .ColorWidthBytes(bytes_per_pixel)
-    ) i_dut (
+  socc_with_rom #() i_dut (
     .clk_i     (clk       ),
     .rst_ni    (rst_n     ),
     .enable_i(enable),
-    .hsync_pol_i('b1),
-    .vsync_pol_i('b1),
     
-    .obi_req_o (obi_req),
-    .obi_rsp_i (obi_rsp),
-    
-    .h_sync_o(h_sync),
-    .v_sync_o(v_sync),
+    .hsync_o(h_sync),
+    .vsync_o(v_sync),
     .color_o(color)
   );
-
-  logic mem_req;
-  logic [ObiCfg.AddrWidth-1:0] mem_addr;
-  logic [ObiCfg.AddrWidth-1:0] rom_buffer_q,rom_buffer_d;
-  obi_sram_shim #(
-      .ObiCfg(ObiCfg),
-      .obi_req_t(obi_req_t),
-      .obi_rsp_t(obi_rsp_t)
-  ) i_sram_obi (
-      .clk_i(clk),
-      .rst_ni(rst_n),
-
-      .obi_req_i(obi_req),
-      .obi_rsp_o(obi_rsp),
-
-      .req_o(mem_req),
-      .we_o(),
-      .addr_o(mem_addr),
-      .wdata_o(),
-      .be_o(),
-
-      .gnt_i('1),
-      .rdata_i(rom_buffer_q)
-  );
-
-  // SRAM shim expects one clk cycle latency
-  `FF(rom_buffer_q, rom_buffer_d, '0, clk, rst_n);
-
-  rom_8bit_counter #(
-  .AddrWidth(ObiCfg.AddrWidth),
-  .DataWidth(ObiCfg.DataWidth)
-  ) i_rom (
-      .clk_i(clk),
-      .rst_ni(rst_n),
-      .req_i(),
-      .addr_i(mem_addr),
-      .data_o(rom_buffer_d)
-  );
-
 
   initial begin : basic_test
       eoc = 0;
@@ -202,23 +127,7 @@ module tb_socc_on_croc;
               img_data[y][x] = 'h00FF00;
             end else begin
               rgb = 32'(color);
-              case (bytes_per_pixel)
-                1: begin 
-                  img_data[y][x] = {
-                    8'h00,
-                    rgb[7:5], rgb[7:5], rgb[7:6],
-                    rgb[4:2], rgb[4:2], rgb[4:3],
-                    rgb[1:0], rgb[1:0], rgb[1:0],rgb[1:0]
-                  };
-                  if(y == 0 && x <= 5) begin
-                    $display("%x --> %x", img_data[y][x], rgb);
-                  end
-                end
-                3: begin 
-                  img_data[y][x] = rgb;
-                end
-                default: $error("Unknown bytes per pixel");
-              endcase
+              img_data[y][x] = rgb;
             end
 
             #(T_CLK);

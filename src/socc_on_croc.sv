@@ -268,10 +268,10 @@ logic [2*ObiCfg.DataWidth-1:0] tmp, shifted;
 
 assign tmp = {fifo_o, barrel_pixel_q};
 assign shifted = tmp >> (barrel_shift_q*(64'h8));
-// assign color_o = !consume_one ? 'b0 : (ColorWidthBytes*8)'((2*ObiCfg.DataWidth)'({fifo_o, barrel_pixel_q}) >> (barrel_shift_q*(64'h8)));
+assign color_o = !consume_one ? 'b0 : (ColorWidthBytes*8)'((2*ObiCfg.DataWidth)'({fifo_o, barrel_pixel_q}) >> (barrel_shift_q*(64'h8)));
 
-assign color_o = consume_one ? (
-  { cntr_v[8:6], cntr_h[8:6], cntr_v[5:4] }
-) : 'b0;
+// assign color_o = consume_one ? (
+//   { cntr_v[8:6], cntr_h[8:6], cntr_v[5:4] }
+// ) : 'b0;
 
 endmodule
