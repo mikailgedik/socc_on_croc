@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 import sys
 
+"""Python file to convert .data files exported from GIMP to 8bit RGB or 24bit RGB"""
+
 def process_file(input_path : str, output_path: str, bytes_per_pixel: int):
     with open(input_path, "rb") as f_in, open(output_path, "wb") as f_out:
         data_i : bytes = f_in.read()
         data_o : bytearray = bytearray()
         for i in range(int(len(data_i)/3)):
+            # gimp export RGB returns this format. lowest byte r, hightest byte b
             b = data_i[3*i + 2]
             g = data_i[3*i + 1]
             r = data_i[3*i + 0]
             if bytes_per_pixel == 1:
                 data_o.append((r & 0b11100000) | ((g >> 3) & 0b11100) | (b >> 6))
             elif bytes_per_pixel == 2:
-                data_o.append((b >> 6) | ((g << 3) & 0b11100000))
-                data_o.append((g >> 5) | (r & 0b11111000))
+                raise ValueError("Unsupported operation")
             elif bytes_per_pixel == 3:
                 data_o.append(b)
                 data_o.append(g)
@@ -22,7 +24,7 @@ def process_file(input_path : str, output_path: str, bytes_per_pixel: int):
                 data_o.append(b)
                 data_o.append(g)
                 data_o.append(r)
-                data_o.append(0)
+                data_o.append(255)
             else:
                 raise ValueError("invalid bytes per pixel")
         f_out.write(data_o)

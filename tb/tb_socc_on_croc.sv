@@ -12,8 +12,8 @@ module tb_socc_on_croc;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-  parameter RAM_INIT = "./stimuli/Untitled3.data";
-  // parameter RAM_INIT = "./stimuli/ram_init.bin";
+  // parameter RAM_INIT = "./stimuli/Untitled3.data";
+  parameter RAM_INIT = "./stimuli/ram_init.bin";
 
   // 32bit data, 32bit address
   // stolen from CROC repo, to maximize compatibility...
@@ -44,7 +44,7 @@ module tb_socc_on_croc;
   localparam active_pixels_v = 16'd480;
   localparam back_porch_v = 16'd33;
   localparam v_sync_width = 16'd2;
-
+  localparam bytes_per_pixel = 1;
 
   //------------------ Logic Wires ------------------//
 
@@ -55,8 +55,8 @@ module tb_socc_on_croc;
 
   logic enable;
   logic h_sync, v_sync;
-  logic [23:0] color;
-    
+  logic [(bytes_per_pixel*8)-1:0] color;
+
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
     // Generating the clock
@@ -80,7 +80,7 @@ module tb_socc_on_croc;
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
     .obi_rsp_t(obi_rsp_t),
-    .ColorWidthBytes(3)
+    .ColorWidthBytes(bytes_per_pixel)
     ) i_dut (
     .clk_i     (clk       ),
     .rst_ni    (rst_n     ),
@@ -91,12 +91,49 @@ module tb_socc_on_croc;
     .obi_req_o (obi_req),
     .obi_rsp_i (obi_rsp),
     
-
-
     .h_sync_o(h_sync),
     .v_sync_o(v_sync),
     .color_o(color)
   );
+
+  logic mem_req;
+  logic [ObiCfg.AddrWidth-1:0] mem_addr;
+  logic [ObiCfg.AddrWidth-1:0] rom_buffer_q,rom_buffer_d;
+  obi_sram_shim #(
+      .ObiCfg(ObiCfg),
+      .obi_req_t(obi_req_t),
+      .obi_rsp_t(obi_rsp_t)
+  ) i_sram_obi (
+      .clk_i(clk),
+      .rst_ni(rst_n),
+
+      .obi_req_i(obi_req),
+      .obi_rsp_o(obi_rsp),
+
+      .req_o(mem_req),
+      .we_o(),
+      .addr_o(mem_addr),
+      .wdata_o(),
+      .be_o(),
+
+      .gnt_i('1),
+      .rdata_i(rom_buffer_q)
+  );
+
+  // SRAM shim expects one clk cycle latency
+  `FF(rom_buffer_q, rom_buffer_d, '0, clk, rst_n);
+
+  rom_8bit_counter #(
+  .AddrWidth(ObiCfg.AddrWidth),
+  .DataWidth(ObiCfg.DataWidth)
+  ) i_rom (
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .req_i(),
+      .addr_i(mem_addr),
+      .data_o(rom_buffer_d)
+  );
+
 
   initial begin : basic_test
       eoc = 0;
@@ -105,16 +142,16 @@ module tb_socc_on_croc;
       $timeformat(-9, 2, " ns", 20);
       
       enable = '0;
-      init_sram(RAM_INIT);
+      // init_sram(RAM_INIT);
       // todo there's a weird glitch going on we hold reset down for only one cycle
       // before enabling ? See tb/tmp.sv
       @(posedge clk);
       #1;
       enable = '1;
-      save_image($sformatf("./output-%03x.bmp", 0));
-      save_image($sformatf("./output-%03x.bmp", 1));
-      save_image($sformatf("./output-%03x.bmp", 2));
-      save_image($sformatf("./output-%03x.bmp", 3));
+      capture_image($sformatf("./output-%03x.bmp", 0));
+      capture_image($sformatf("./output-%03x.bmp", 1));
+      // capture_image($sformatf("./output-%03x.bmp", 2));
+      // capture_image($sformatf("./output-%03x.bmp", 3));
       enable = '0;
       eoc = 1;
 
@@ -122,6 +159,7 @@ module tb_socc_on_croc;
       $dumpflush;
       $finish(1);
   end
+
   localparam logic[31:0] img_w = 'd800, img_h = 'd525, img_byte_per_pixel = 'd3;
   localparam logic[31:0] img_w_bytes = (img_byte_per_pixel * img_w + 3) / 4 * 4; //Round up each row to 4 bytes
   // pad w to 4 bytes
@@ -152,17 +190,35 @@ module tb_socc_on_croc;
   int img_data [img_h][img_w];
 
   //------------------ Response Check ------------------//
-  task automatic save_image(input string file_name);
+  task automatic capture_image(input string file_name);
       int fd;
+      int rgb;
       @(negedge v_sync);
       for(int y = 0; y < img_h; y++) begin
           for(int x = 0; x < img_w; x++) begin
             if(v_sync == 'b0) begin
-              img_data[y][x] = 'hFFFFFF;
+              img_data[y][x] = 'h7F7F7F;
             end else if (h_sync == 'b0) begin
-              img_data[y][x] = 'h0;
+              img_data[y][x] = 'h00FF00;
             end else begin
-              img_data[y][x] = 32'(color);
+              rgb = 32'(color);
+              case (bytes_per_pixel)
+                1: begin 
+                  img_data[y][x] = {
+                    8'h00,
+                    rgb[7:5], rgb[7:5], rgb[7:6],
+                    rgb[4:2], rgb[4:2], rgb[4:3],
+                    rgb[1:0], rgb[1:0], rgb[1:0],rgb[1:0]
+                  };
+                  if(y == 0 && x <= 5) begin
+                    $display("%x --> %x", img_data[y][x], rgb);
+                  end
+                end
+                3: begin 
+                  img_data[y][x] = rgb;
+                end
+                default: $error("Unknown bytes per pixel");
+              endcase
             end
 
             #(T_CLK);
@@ -176,7 +232,10 @@ module tb_socc_on_croc;
           $fwrite(fd, "%c", header_data[i]);
       end
 
-      img_data[0][0] = 'h0000FF;
+      img_data[0][0] = 'h0000FF; //blue
+      img_data[0][1] = 'h00FF00; //green
+      img_data[0][2] = 'hFF0000; //red
+      
       img_data[img_h - 5][0] = 'hFF0000;
       img_data[0][img_w - 1] = 'h00FF00;
       
@@ -191,80 +250,5 @@ module tb_socc_on_croc;
           end
       end
       $fclose(fd);
-  endtask //save_image
-
-  localparam RAM_SIZE_BYTES = 1 << 21;
-  byte data [RAM_SIZE_BYTES];
-  
-  struct packed {
-    logic req_i;
-    logic we_i;
-    logic [31:0] addr_i;
-    logic [31:0] wdata_i;
-    logic [3:0] be_i;
-
-    logic gnt_o;
-    logic [31:0] rdata_o;
-  } sram_shim;
-
-  obi_sram_shim #(
-    .ObiCfg(ObiCfg),
-    .obi_req_t(obi_req_t),
-    .obi_rsp_t(obi_rsp_t)
-    ) i_sram_obi (
-    .clk_i(clk),
-    .rst_ni(rst_n),
-
-    .obi_req_i(obi_req),
-    .obi_rsp_o(obi_rsp),
-
-    .req_o(sram_shim.req_i),
-    .we_o(sram_shim.we_i),
-    .addr_o(sram_shim.addr_i),
-    .wdata_o(sram_shim.wdata_i),
-    .be_o(sram_shim.be_i),
-
-    .gnt_i(sram_shim.gnt_o),
-    .rdata_i(sram_shim.rdata_o)
-  );
-
-  logic active_request_q, active_request_d;
-  logic [ObiCfg.AddrWidth-1:0] request_addr_q, request_addr_d;
-  
-  `FF(active_request_q, active_request_d, 'b0, clk, rst_n);
-  `FF(request_addr_q, request_addr_d, 'b0, clk, rst_n);
-  
-  assign sram_shim.gnt_o = active_request_q;
-  
-  genvar i;
-  generate
-    for(i = 0; i < ObiCfg.AddrWidth/8; i++) begin
-      assign sram_shim.rdata_o[((i+1)*8-1):(i*8)] = request_addr_q + i < RAM_SIZE_BYTES ? data[request_addr_q + i] : 'haa;
-      // assign sram_shim.rdata_o[((i+1)*8-1):(i*8)] = request_addr_q + i;
-      // sram_shim.rdata_o[i] = request_addr_q;
-    end
-  endgenerate
-
-  always_comb begin : sram_backend
-    active_request_d = sram_shim.req_i;
-    request_addr_d = sram_shim.addr_i;
-  end
-
-  task automatic init_sram(input string file_name);
-    int fd;
-    // Use this in bash to populate the binary file for testing
-    // for i in {0..255}; do printf \\x$(printf '%x' $i) >> stimuli/ram_init.bin; done
-    int errcode;
-    fd = $fopen (file_name, "rb");
-    errcode = $fread(data, fd);
-    if (errcode == 0) $error("Could not read data, %x", errcode);
-    $fclose(fd);
-    for(int i = 10; i < 650; i++) begin
-      data[4*i] = 8'(i);
-      data[4*i+1] = 8'(i >> 8);
-      data[4*i+2] = 0;
-      data[4*i+3] = 0;
-    end
-  endtask //automatic
-
+  endtask //capture_image
 endmodule

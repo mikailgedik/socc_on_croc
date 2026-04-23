@@ -41,6 +41,7 @@ localparam max_transactions = (ObiCfg.AddrWidth)'(ColorWidthBytes * active_pixel
 typedef enum {FLUSHING, WORKING} state_t;
 
 logic h_sync, v_sync, consume_one, last_pixel;
+logic [15:0] cntr_h, cntr_v;
 state_t state_q, state_d;
 logic [MAX_OUTSTANDING_REQS_BASE-1:0] outstanding_reqs_q, outstanding_reqs_d;
 logic [31:0] addr_req_q, addr_req_d;
@@ -96,7 +97,10 @@ vga_fsm #(
     .consume_one_o(consume_one),
     .last_pixel_o(last_pixel),
     .h_sync_o(h_sync),
-    .v_sync_o(v_sync)
+    .v_sync_o(v_sync),
+
+    .cntr_h_o(cntr_h),
+    .cntr_v_o(cntr_v)
 );
 assign h_sync_o = h_sync;
 assign v_sync_o = v_sync;
@@ -153,10 +157,10 @@ always_comb begin : obi_channels
     transactions_d++;
   end
 
-  if(last_pixel) begin
+  if(last_pixel || state_q == FLUSHING) begin
     transactions_d = 'b0;
   end
-  if(entire_frame_requested) begin
+  if(entire_frame_requested || state_q == FLUSHING) begin
     addr_req_d = 'b0;
   end
 
@@ -235,7 +239,9 @@ always_comb begin : barrel_roll
     // default: $error("This should not happen...");
   endcase
 
-  if(last_pixel) begin
+  if(state_q == FLUSHING) begin
+    loaded_d = 'b0;
+    barrel_shift_d = 'b0;
     sync_loss_d = 'b0;
   end
   // TODO check sync loss here and adjust accordingly
@@ -262,6 +268,10 @@ logic [2*ObiCfg.DataWidth-1:0] tmp, shifted;
 
 assign tmp = {fifo_o, barrel_pixel_q};
 assign shifted = tmp >> (barrel_shift_q*(64'h8));
-assign color_o = !consume_one ? 'hFF00FF : (ColorWidthBytes*8)'((2*ObiCfg.DataWidth)'({fifo_o, barrel_pixel_q}) >> (barrel_shift_q*(64'h8)));
+// assign color_o = !consume_one ? 'b0 : (ColorWidthBytes*8)'((2*ObiCfg.DataWidth)'({fifo_o, barrel_pixel_q}) >> (barrel_shift_q*(64'h8)));
+
+assign color_o = consume_one ? (
+  { cntr_v[8:6], cntr_h[8:6], cntr_v[5:4] }
+) : 'b0;
 
 endmodule

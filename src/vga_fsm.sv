@@ -25,7 +25,10 @@ module vga_fsm #(
     output logic consume_one_o,
     output logic last_pixel_o,
     output logic h_sync_o,
-    output logic v_sync_o
+    output logic v_sync_o,
+
+    output logic [Width-1:0] cntr_h_o,
+    output logic [Width-1:0] cntr_v_o
 );
 
 /*
@@ -72,5 +75,9 @@ assign v_sync_o = (
         (counter_v_q >= v_sync_start_i && counter_v_q < v_sync_end_i)
         || (counter_v_q == v_sync_end_i && counter_h_q <= h_sync_end_i)
     ) ^ vsync_pol_i) && enable_i;
+
+assign cntr_h_o = counter_h_q;
+assign cntr_v_o = counter_v_q;
+
 
 endmodule

@@ -16,6 +16,7 @@ sources:
   # levels 1 and 0, etc. Files within a level are ordered alphabetically.
   # Level 0
   - src/*.sv
+  - src/generated/*.sv
 
   - target: all(fpga, xilinx)
     files:

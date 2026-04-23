@@ -103,20 +103,20 @@ module plle2_adv(
     (* keep *)
   PLLE2_ADV
   #(
-	  .BANDWIDTH            ("OPTIMIZED"),
+    .BANDWIDTH            ("OPTIMIZED"),
     .COMPENSATION         ("ZHOLD"),
     .STARTUP_WAIT         ("FALSE"),
-    .DIVCLK_DIVIDE        (3),
-    .CLKFBOUT_MULT        (37),
+    .DIVCLK_DIVIDE        (1),
+    .CLKFBOUT_MULT        (8),
     .CLKFBOUT_PHASE       (0.000),
-    .CLKOUT0_DIVIDE       (49),
+    .CLKOUT0_DIVIDE       (25),
     .CLKOUT0_PHASE        (0.000),
     .CLKOUT0_DUTY_CYCLE   (0.500),
-    .CLKOUT1_DIVIDE       (31),
+    .CLKOUT1_DIVIDE       (40),
     .CLKOUT1_PHASE        (0.000),
     .CLKOUT1_DUTY_CYCLE   (0.500),
-    .CLKIN1_PERIOD        (10.000)
-    )
+    .CLKIN1_PERIOD        (8.000)
+  )
   plle2_adv_inst
     // Output clocks
    (
