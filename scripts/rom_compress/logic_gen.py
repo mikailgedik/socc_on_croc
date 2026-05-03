@@ -12,28 +12,15 @@ from random import Random
 # RST---------|       |       |       |       |       |       |       |
 # CLK---------|-------|       |-------|       |-------|       |-------|
 
-class Gate:
-    def __init__(self, sv_rhs_template: str, eval_fn: Callable[[bool, bool], bool]) -> None:
-        self.sv_rhs_template : str = sv_rhs_template
-        self.eval_fn: Callable[[bool, bool], bool] = eval_fn
-
-    def __call__(self, a: bool, b: bool) -> bool:
-        return self.eval_fn(a, b)
-
-    def to_sv_rhs(self, a: str, b: str) -> str:
-        return self.sv_rhs_template.replace("a",a).replace("b", b)
-class Gates(Gate, Enum):
-    NAND = "~(a & b)", lambda a,b: not (a and b) # type: ignore
-    NOR = "~(a | b)", lambda a,b: not (a or b) # type: ignore
-    XNOR = "~(a ^ b)", bool.__eq__
-    AND = "(a & b)", bool.__and__
-    OR = "(a | b)", bool.__or__
-    XOR = "(a ^ b)", lambda a,b: a != b # type: ignore
-    ONE = "'1", lambda _a,_b: True # type: ignore
-    ZERO = "'0", lambda _a,_b: False # type: ignore
-
-STAGE_COUNT : int = 2
-FF_PER_STAGE : int = 32
+class Gates(int, Enum):
+    ZERO = 0b000
+    XOR = 0b001
+    AND = 0b010
+    OR = 0b011
+    ONE = 0b100
+    XNOR = 0b101
+    NAND = 0b110
+    NOR = 0b111
 
 SV_TEMPLATE : str = """
 module %MODULE_NAME% #(
@@ -54,56 +41,124 @@ module %MODULE_NAME% #(
 endmodule
 """
 
-type CombFF = tuple[Gate, tuple[int, int]]
+def get_src_bits(input: bytes, bit_indexes: tuple[int, ...]) -> bytes:
+    assert len(bit_indexes) % 8 == 0
+    return bytes([
+        (((input[bit_indexes[8*i + 0] // 8] >> (bit_indexes[8*i + 0] % 8)) & 1) << 0) |
+        (((input[bit_indexes[8*i + 1] // 8] >> (bit_indexes[8*i + 1] % 8)) & 1) << 1) |
+        (((input[bit_indexes[8*i + 2] // 8] >> (bit_indexes[8*i + 2] % 8)) & 1) << 2) |
+        (((input[bit_indexes[8*i + 3] // 8] >> (bit_indexes[8*i + 3] % 8)) & 1) << 3) |
+        (((input[bit_indexes[8*i + 4] // 8] >> (bit_indexes[8*i + 4] % 8)) & 1) << 4) |
+        (((input[bit_indexes[8*i + 5] // 8] >> (bit_indexes[8*i + 5] % 8)) & 1) << 5) |
+        (((input[bit_indexes[8*i + 6] // 8] >> (bit_indexes[8*i + 6] % 8)) & 1) << 6) |
+        (((input[bit_indexes[8*i + 7] // 8] >> (bit_indexes[8*i + 7] % 8)) & 1) << 7)
+        for i in range(len(bit_indexes)//8)
+    ])
 
-type StageState = list[bool]
 
-def gen_random_combff(rng: Random) -> CombFF:
-    # return (Gates.NAND, (0,1))
-    return (rng.choice(list(Gates)), (rng.randint(0,FF_PER_STAGE-1),rng.randint(0,FF_PER_STAGE-1)))
+class StageComb8:
+    """
+    Combinatorial logic of n*eight inputs at once. Funny business
+    The output is calculated as follows:
+    (((A ^ B) & c1) + ((A & B) & c2)) ^ c3
+    This enables all basic operations (AND, OR, XOR, ZERO and its negated counterparts)
+    """
+    def __init__(self,
+                gates: int) -> None:
+        self.gates = gates
+        # bytes is always a multiple of 4
+        self.bytes = ((gates + 31) // 32) * 4
+        self.xor_enable = bytes(self.bytes)
+        self.and_enable = bytes(self.bytes)
+        self.inv_enable = bytes(self.bytes)
+        # Index in the previous stage for the sources
+        self.sourceA = tuple([i for i in range(self.bytes * 8)])
+        self.sourceB = tuple([i for i in range(self.bytes * 8)])
 
-class Stage:
-    def __init__(self, size: int):
-        self.size : int = size
-        self.state : list[bool] = [False for _ in range(size)]
-        rng = Random()
-        self.gates : list[CombFF] = [gen_random_combff(rng) for _ in range(size)]
-    def logic_function(self, input: list[bool]) -> list[bool]:
-        return [g[0](input[g[1][0]], input[g[1][1]]) for g in self.gates]
+
+    def next_stage(self, input: bytes) -> bytes:
+        # assert len(input) == self.bytes, f"{len(input)}, {self.bytes}"
+        sourceA_bits = get_src_bits(input, self.sourceA)
+        sourceB_bits = get_src_bits(input, self.sourceB)
+
+        return bytes([
+            (((sourceA_bits[i] ^ sourceB_bits[i]) & self.xor_enable[i]) |
+             ((sourceA_bits[i] & sourceB_bits[i]) & self.and_enable[i])) ^ self.inv_enable[i]
+            for i in range(self.bytes)])
     
-    def next_step(self, input: list[bool]) -> "Stage":
-        s : Stage = Stage(self.size)
-        s.gates = self.gates
-        s.state = self.logic_function(input)
-        return s
+    def to_sv_rhs(self) -> list[str]:
+        def bits_to_sv_rhs(bits: int) -> str:
+            match bits:
+                case 0b000: return "'0"
+                case 0b001: return "(a ^ b)"
+                case 0b010: return "(a & b)"
+                case 0b011: return "(a | b)"
+                case 0b100: return "'1"
+                case 0b101: return "~(a ^ b)"
+                case 0b110: return "~(a & b)"
+                case 0b111: return "~(a | b)"
+                case _: raise ValueError("Unsupported bits!")
 
+        return [
+            bits_to_sv_rhs(
+                (((self.xor_enable[i // 8] >> (i % 8)) & 1) << 0) |
+                (((self.and_enable[i // 8] >> (i % 8)) & 1) << 1) |
+                (((self.inv_enable[i // 8] >> (i % 8)) & 1) << 2)
+            ) for i in range(8 * self.bytes)
+        ]
+    
+    def randomize_stage(self, prev_stage_len: int, mutation_prob: float, rng:Random) -> "StageComb8":
+        n = StageComb8(self.gates)
+        nxor_enable = bytearray(self.bytes)
+        nand_enable = bytearray(self.bytes)
+        ninv_enable = bytearray(self.bytes)
+
+        for i in range(self.gates):
+            if rng.random() < mutation_prob:
+                nxor_enable[i // 8] ^= (rng.randint(0,1) & 1) << (i % 8)
+                nand_enable[i // 8] ^= (rng.randint(0,1) & 1) << (i % 8)
+                ninv_enable[i // 8] ^= (rng.randint(0,1) & 1) << (i % 8)
+
+        nsourceA = [rng.randint(0, prev_stage_len - 1) if rng.random() < mutation_prob else self.sourceA[i] for i in range(self.bytes * 8)]
+        nsourceB = [rng.randint(0, prev_stage_len - 1) if rng.random() < mutation_prob else self.sourceB[i] for i in range(self.bytes * 8)]
+
+        n.xor_enable = bytes(nxor_enable)
+        n.and_enable = bytes(nand_enable)
+        n.inv_enable = bytes(ninv_enable)
+        n.sourceA = tuple(nsourceA)
+        n.sourceB = tuple(nsourceB)
+        return n
+
+type StageState = bytes
 
 class Machine:
-    def __init__(self) -> None:
-        self.stages_q : list[Stage] = [Stage(FF_PER_STAGE) for _ in range(STAGE_COUNT)]
+    INPUT_WIDTH = 17
+    FF_PER_STAGE = (34,50,50,45)
 
-    def run(self, stim: list[list[bool]]) -> list[list[bool]]:
-        res : list[list[bool]] = list()
+    def __init__(self) -> None:
+        self.stages_q : tuple[bytes, ...] = tuple([bytes(Machine.FF_PER_STAGE[i]) for i in range(len(Machine.FF_PER_STAGE))])
+        self.stage_comb : tuple[StageComb8, ...] = tuple(StageComb8(Machine.FF_PER_STAGE[i]) for i in range(len(Machine.FF_PER_STAGE)))
+
+    def run(self, stim: list[bytes]) -> list[bytes]:
+        res : list[bytes] = list()
         
         for s in stim:
-            stages_d : list[Stage] = [Stage(FF_PER_STAGE) for _ in range(STAGE_COUNT)]
-            stages_d[0] = self.stages_q[0].next_step(s)
+            stages_d : list[StageState] = [bytes(0) for _ in range(len(Machine.FF_PER_STAGE))]
+            stages_d[0] = self.stage_comb[0].next_stage(s)
             for i in range(1, len(stages_d)):
-                stages_d[i] = self.stages_q[i].next_step(self.stages_q[i-1].state)
+                stages_d[i] = self.stage_comb[i].next_stage(self.stages_q[i-1])
 
-            self.stages_q = stages_d
-            res.append(self.stages_q[-1].state)
+            self.stages_q = tuple(stages_d)
+            res.append(self.stages_q[-1])
         return res
     
     def modified_clone(self, mutation_prob: float, rng: Random = Random()) -> "Machine":
         m = Machine()
-        for i in range(len(m.stages_q)):
-            s = m.stages_q[i]
-            for ii in range(len(s.gates)):
-                if rng.random() < mutation_prob:
-                    m.stages_q[i].gates[ii] = gen_random_combff(rng)
-                else:
-                    m.stages_q[i].gates[ii] = self.stages_q[i].gates[ii]
+        
+        m.stage_comb = ((self.stage_comb[0].randomize_stage(Machine.INPUT_WIDTH, mutation_prob, rng),) +
+                        tuple([self.stage_comb[i].randomize_stage(self.stage_comb[i-1].gates, mutation_prob, rng)
+                               for i in range(1, len(self.stage_comb))]))
+
         return m
 
     def to_system_verilog(self, module_name: str) -> str:
@@ -111,23 +166,24 @@ class Machine:
         comb_stmts = ""
         ff_stms = ""
         prev_stage_q : str = "data_i"
-        for i in range(len(self.stages_q)):
-            stage = self.stages_q[i]
-            logic_decls += f"\tlogic [{len(stage.gates) - 1}:0] state_{i}_d, state_{i}_q;\n"
+        for i in range(len(self.stage_comb)):
+            stage = self.stage_comb[i]
+            logic_decls += f"\tlogic [{stage.gates - 1}:0] state_{i}_d, state_{i}_q;\n"
             ff_stms += f"\t\tstate_{i}_q <= rst_ni ? state_{i}_d : 'b0;\n"
 
-            for ii in range(0, len(stage.gates)):
-                g = stage.gates[ii]
-                rhs_a = f"{prev_stage_q}[{g[1][0]}]"
-                rhs_b = f"{prev_stage_q}[{g[1][1]}]"
-                rhs = g[0].to_sv_rhs(rhs_a, rhs_b)
+            stage_rhs : list[str] = stage.to_sv_rhs()
+
+            for ii in range(0, stage.gates):
+                rhs_a = f"{prev_stage_q}[{stage.sourceA[ii]}]"
+                rhs_b = f"{prev_stage_q}[{stage.sourceB[ii]}]"
+                rhs = stage_rhs[ii].replace("a", rhs_a).replace("b", rhs_b)
                 comb_stmts += f"\t\tstate_{i}_d[{ii}] = {rhs};\n"
             prev_stage_q = f"state_{i}_q"
         comb_stmts += f"\t\tdata_o = state_{len(self.stages_q) - 1}_q;"
         return SV_TEMPLATE.replace(
             "%MODULE_NAME%", module_name).replace(
-            "%WIDTH_IN%", str(FF_PER_STAGE - 1)).replace(
-            "%WIDTH_OUT%", str(FF_PER_STAGE - 1)).replace(
+            "%WIDTH_IN%", str(Machine.INPUT_WIDTH - 1)).replace(
+            "%WIDTH_OUT%", str(Machine.FF_PER_STAGE[-1] - 1)).replace(
             "%LOGIC_DECL%", logic_decls).replace(
             "%COMB%", comb_stmts).replace(
             "%FLIPFLOP%", ff_stms)

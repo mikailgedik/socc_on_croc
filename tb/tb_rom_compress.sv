@@ -9,9 +9,11 @@ module tb_rom_compress;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-    localparam FF_PER_STAGE = 4096;
+    localparam ROM_INPUT_WIDTH = 17;
+    localparam ROM_OUTPUT_WIDTH = 45;
     // localparam STAGE_COUNT = 1; // defines latency
-    localparam INTS_PER_CLK = (FF_PER_STAGE+31)/32;
+    localparam INTS_PER_STIMULUS = (ROM_INPUT_WIDTH+31)/32;
+    localparam INTS_PER_STIMULUS_OUT = (ROM_OUTPUT_WIDTH+31)/32;
   //------------------ Logic Wires ------------------//
 
   logic       eoc;            // End of computation
@@ -19,8 +21,8 @@ module tb_rom_compress;
   logic       rst_n;
   logic enable;
 
-    logic [(INTS_PER_CLK*32-1):0] data_i;
-    logic [(INTS_PER_CLK*32-1):0] data_o;
+    logic [(INTS_PER_STIMULUS*32-1):0] data_i;
+    logic [(INTS_PER_STIMULUS_OUT*32-1):0] data_o;
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
     // Generating the clock
@@ -44,8 +46,8 @@ module tb_rom_compress;
     test_gen_rom dut_i (
         .clk_i(clk),
         .rst_ni(rst_n),
-        .data_i(data_i[(FF_PER_STAGE-1):0]),
-        .data_o(data_o[(FF_PER_STAGE-1):0])
+        .data_i(data_i[(ROM_INPUT_WIDTH-1):0]),
+        .data_o(data_o[(ROM_OUTPUT_WIDTH-1):0])
     );
   initial begin : basic_test
       eoc = 0;
@@ -74,7 +76,7 @@ task automatic capture_image(input string stimuli_file, input string result_file
     int fd;
     int one, clk_cylces;
     byte unsigned file_content[] = new[0];
-    int unsigned stimuli[][INTS_PER_CLK];
+    int unsigned stimuli[][INTS_PER_STIMULUS];
 
     fd = $fopen (stimuli_file, "rb");
     if(fd == 0) $error("Could not open file stimuli_file");
@@ -86,19 +88,19 @@ task automatic capture_image(input string stimuli_file, input string result_file
         one = $fgetc(fd);
     end
 
-    if(file_content.size() % (INTS_PER_CLK * 4) != 0) begin
-        $error("file must have a mutlipe of sizeof(int) * INTS_PER_CLK! %d, %d", file_content.size(), 4 * INTS_PER_CLK);
+    if(file_content.size() % (INTS_PER_STIMULUS * 4) != 0) begin
+        $error("file must have a mutlipe of sizeof(int) * INTS_PER_STIMULUS! %d, %d", file_content.size(), 4 * INTS_PER_STIMULUS);
     end
 
-    stimuli = new[file_content.size()/(INTS_PER_CLK * 4)];
+    stimuli = new[file_content.size()/(INTS_PER_STIMULUS * 4)];
     foreach(stimuli[i]) begin
         foreach(stimuli[i][j]) begin
-            int base = 4 * INTS_PER_CLK * i + 4 * j;
+            int base = 4 * INTS_PER_STIMULUS * i + 4 * j;
             stimuli[i][j] =
-                file_content[base] | 
-                file_content[base + 1] << 8 |
-                file_content[base + 2] << 16 |
-                file_content[base + 3] << 24;
+                {24'h0, file_content[base]} | 
+                {24'h0, file_content[base + 1]} << 8 |
+                {24'h0, file_content[base + 2]} << 16 |
+                {24'h0, file_content[base + 3]} << 24;
         end
     end
 
@@ -119,7 +121,7 @@ task automatic capture_image(input string stimuli_file, input string result_file
         #1;
         $display("Output: %x", data_o);
 
-        for (int j = 0; j < INTS_PER_CLK; j++) begin
+        for (int j = 0; j < INTS_PER_STIMULUS_OUT; j++) begin
             $fwrite(fd, "%c%c%c%c",
                 data_o[j*32 +: 8],
                 data_o[j*32 + 8 +: 8],
