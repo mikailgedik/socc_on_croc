@@ -64,17 +64,27 @@ class StageComb8:
     This enables all basic operations (AND, OR, XOR, ZERO and its negated counterparts)
     """
     def __init__(self,
-                gates: int) -> None:
+                gates: int,
+                prev_stage_size: int | None = None) -> None:
         self.gates = gates
         # bytes is always a multiple of 4
         self.bytes = ((gates + 31) // 32) * 4
-        self.xor_enable = bytes(self.bytes)
-        self.and_enable = bytes(self.bytes)
-        self.inv_enable = bytes(self.bytes)
-        # Index in the previous stage for the sources
-        self.sourceA = tuple([i for i in range(self.bytes * 8)])
-        self.sourceB = tuple([i for i in range(self.bytes * 8)])
 
+        if prev_stage_size is None:        
+            self.xor_enable = bytes(self.bytes)
+            self.and_enable = bytes(self.bytes)
+            self.inv_enable = bytes(self.bytes)
+            # Index in the previous stage for the sources
+            self.sourceA = tuple([0 for _ in range(self.bytes * 8)])
+            self.sourceB = tuple([0 for _ in range(self.bytes * 8)])
+        else:
+            """Initialize it with ORs of all previous gates"""
+            self.xor_enable = bytes(255 for _ in range(self.bytes))
+            self.and_enable = bytes(255 for _ in range(self.bytes))
+            self.inv_enable = bytes(self.bytes)
+            # Index in the previous stage for the sources
+            self.sourceA = tuple([i if i < prev_stage_size else 0 for i in range(self.bytes * 8)])
+            self.sourceB = tuple([i if i < prev_stage_size else 0 for i in range(self.bytes * 8)])
 
     def next_stage(self, input: bytes) -> bytes:
         # assert len(input) == self.bytes, f"{len(input)}, {self.bytes}"
@@ -109,9 +119,9 @@ class StageComb8:
     
     def randomize_stage(self, prev_stage_len: int, mutation_prob: float, rng:Random) -> "StageComb8":
         n = StageComb8(self.gates)
-        nxor_enable = bytearray(self.bytes)
-        nand_enable = bytearray(self.bytes)
-        ninv_enable = bytearray(self.bytes)
+        nxor_enable = bytearray(self.xor_enable)
+        nand_enable = bytearray(self.and_enable)
+        ninv_enable = bytearray(self.inv_enable)
 
         for i in range(self.gates):
             if rng.random() < mutation_prob:
@@ -132,12 +142,15 @@ class StageComb8:
 type StageState = bytes
 
 class Machine:
-    INPUT_WIDTH = 17
-    FF_PER_STAGE = (34,50,50,45)
+    INPUT_WIDTH = 32
+    FF_PER_STAGE = (64,64,64,64,32)
 
     def __init__(self) -> None:
         self.stages_q : tuple[bytes, ...] = tuple([bytes(Machine.FF_PER_STAGE[i]) for i in range(len(Machine.FF_PER_STAGE))])
-        self.stage_comb : tuple[StageComb8, ...] = tuple(StageComb8(Machine.FF_PER_STAGE[i]) for i in range(len(Machine.FF_PER_STAGE)))
+        self.stage_input_width : dict[int, int]= {i:self.FF_PER_STAGE[i-1] for i in range(1, len(self.FF_PER_STAGE))}
+        self.stage_input_width[0] = Machine.INPUT_WIDTH
+        self.stage_comb : tuple[StageComb8, ...] = tuple(
+            StageComb8(Machine.FF_PER_STAGE[i], self.stage_input_width[i]) for i in range(len(Machine.FF_PER_STAGE)))
 
     def run(self, stim: list[bytes]) -> list[bytes]:
         res : list[bytes] = list()
@@ -152,12 +165,14 @@ class Machine:
             res.append(self.stages_q[-1])
         return res
     
-    def modified_clone(self, mutation_prob: float, rng: Random = Random()) -> "Machine":
+    def modified_clone(self, mutation_prob: float, stages : list[int] | None, rng: Random) -> "Machine":
         m = Machine()
         
-        m.stage_comb = ((self.stage_comb[0].randomize_stage(Machine.INPUT_WIDTH, mutation_prob, rng),) +
-                        tuple([self.stage_comb[i].randomize_stage(self.stage_comb[i-1].gates, mutation_prob, rng)
-                               for i in range(1, len(self.stage_comb))]))
+        if stages is None:
+            stages = list(range(len(self.stage_comb)))
+
+        m.stage_comb = tuple([self.stage_comb[i].randomize_stage(self.stage_input_width[i], mutation_prob if i in stages else 0, rng) 
+                               for i in range(len(self.stage_comb))])
 
         return m
 
