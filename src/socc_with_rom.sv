@@ -97,14 +97,14 @@ module socc_with_rom(
     // SRAM shim expects one clk cycle latency
     `FF(rom_buffer_q, rom_buffer_d, '0, clk_i, rst_ni);
     
-    rom_8bit #(
-    .AddrWidth(ObiCfg.AddrWidth),
-    .DataWidth(ObiCfg.DataWidth)
+    test_gen_rom #(
+    // .AddrWidth(ObiCfg.AddrWidth),
+    // .DataWidth(ObiCfg.DataWidth)
     ) i_rom (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
-        .req_i(),
-        .addr_i(mem_addr),
+        // .req_i(),
+        .data_i(mem_addr),
         .data_o(rom_buffer_d)
     );
 

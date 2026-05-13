@@ -139,11 +139,24 @@ class StageComb8:
         n.sourceB = tuple(nsourceB)
         return n
 
+    def sources_to_list(self) -> list[int]:
+        def ab_to_uint16(p: tuple[int, int]) -> int:
+            return (p[0] & 0xFFFF) | ((p[1] & 0xFFFF) << 16)
+        return list(map(ab_to_uint16, zip(self.sourceA,self.sourceB)))
+    
+    def xor_to_list(self) -> list[int]:
+        return list(int.from_bytes(self.xor_enable[4*i:(4*i+4)], byteorder='little') for i in range(self.bytes // 4))
+    def and_to_list(self) -> list[int]:
+        return list(int.from_bytes(self.and_enable[4*i:(4*i+4)], byteorder='little') for i in range(self.bytes // 4))
+    def inv_to_list(self) -> list[int]:
+        return list(int.from_bytes(self.inv_enable[4*i:(4*i+4)], byteorder='little') for i in range(self.bytes // 4))
+
+
 type StageState = bytes
 
 class Machine:
     INPUT_WIDTH = 32
-    FF_PER_STAGE = (64,64,64,64,32)
+    FF_PER_STAGE = (4096,32)
 
     def __init__(self) -> None:
         self.stages_q : tuple[bytes, ...] = tuple([bytes(Machine.FF_PER_STAGE[i]) for i in range(len(Machine.FF_PER_STAGE))])
@@ -202,3 +215,12 @@ class Machine:
             "%LOGIC_DECL%", logic_decls).replace(
             "%COMB%", comb_stmts).replace(
             "%FLIPFLOP%", ff_stms)
+    
+    def sources_to_list(self) -> list[list[int]]:
+        return list(k.sources_to_list() for k in self.stage_comb)
+    def xor_to_list(self) -> list[list[int]]:
+        return list(k.xor_to_list() for k in self.stage_comb)
+    def and_to_list(self) -> list[list[int]]:
+        return list(k.and_to_list() for k in self.stage_comb)
+    def inv_to_list(self) -> list[list[int]]:
+        return list(k.inv_to_list() for k in self.stage_comb)
