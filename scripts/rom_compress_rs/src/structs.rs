@@ -27,7 +27,7 @@ macro_rules! decl_consts {
 }
 
 // First stage is a "dummy" stage for the input!
-const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(32,4096,32);
+const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(17,4096,4096,4096,4096,45);
 
 pub const U32_PER_STAGE: &[usize] = _NO_CONSTS.0;
 pub const FF_PER_STAGE: &[usize] = _NO_CONSTS.1;
@@ -96,7 +96,6 @@ pub struct StageComb {
 #[derive(Debug, Clone, Copy)]
 pub struct Machine {
     comb: [StageComb; U32_PER_STAGE.len()],
-    // stage_q: [[u32; U32_MAX_PER_STAGE]; U32_PER_STAGE.len()],
 }
 
 
@@ -111,22 +110,6 @@ impl StageComb {
             inv_enable: [0; U32_MAX_PER_STAGE]
         }
     }
-
-    // pub fn calc_next_stage(&self, input: &[u32], dst: &mut [u32]) {
-    //     let stage_u32 = (self.gates + 31) / 32;
-    //     assert!(stage_u32 <= dst.len());
-    //     for i in 0..stage_u32 {
-    //         let mut src_a : u32 = 0;
-    //         let mut src_b : u32 = 0;
-    //         for (idx_a, idx_b) in &self.sources[(32 * i)..(32 * (i+1))] {
-    //             src_a <<= 1;
-    //             src_b <<= 1;
-    //             src_a |= (input[(*idx_a / 32) as usize] >> ((*idx_a as usize) % 32)) & 1;
-    //             src_b |= (input[(*idx_b / 32) as usize] >> ((*idx_b as usize) % 32)) & 1;
-    //         }
-    //         dst[i] = (((src_a & src_b) & self.and_enable[i]) | ((src_a ^ src_b) & self.xor_enable[i])) ^ self.inv_enable[i];
-    //     }
-    // }
 
     pub fn to_sv_rhs(&self) -> Vec<&'static str> {
         fn tuple_to_sv_rhs(mut and_xor_inv: (u32, u32, u32)) -> [&'static str; 32] {
@@ -190,9 +173,17 @@ impl Machine {
                 
                 c.sources[u] = (s1, s2);
             }
-            rng.fill(&mut c.and_enable);
-            rng.fill(&mut c.xor_enable);
-            rng.fill(&mut c.inv_enable);
+            
+            rng.fill(&mut c.and_enable[0..U32_PER_STAGE[i]]);
+            rng.fill(&mut c.xor_enable[0..U32_PER_STAGE[i]]);
+            rng.fill(&mut c.inv_enable[0..U32_PER_STAGE[i]]);
+
+            if c.gates % 32 != 0 {
+                let mask : u32 = (1 << c.gates % 32) - 1;
+                c.and_enable[U32_PER_STAGE[i] - 1] = mask;
+                c.xor_enable[U32_PER_STAGE[i] - 1] = mask;
+                c.inv_enable[U32_PER_STAGE[i] - 1] = mask;
+            }
         }
     }
 
