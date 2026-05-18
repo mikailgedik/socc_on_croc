@@ -1,0 +1,15 @@
+[package]
+name = "rom_compress_rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wgpu = "*"
+tokio = { version = "*", features = ["full"] }
+bytemuck = "*"
+flume = "*"
+log = "*"
+anyhow = "*"
+rand = "*"
+env_logger = "0.7"
+xorshift = "*"
