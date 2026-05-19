@@ -11,20 +11,21 @@ override workers_z : u32 = 1;
 alias arr_max_u32 = array<u32, u32_max_per_stage>;
 alias arr_max_u32_stages = array<arr_max_u32, total_stages>;
 
-@group(0) @binding(0) var<storage, read> in_sources: array<array<array<u32, u32_max_per_stage * 32>, total_stages>>;
-@group(0) @binding(1) var<storage, read> in_and_enables: array<arr_max_u32_stages>;
-@group(0) @binding(2) var<storage, read> in_xor_enables: array<arr_max_u32_stages>;
-@group(0) @binding(3) var<storage, read> in_inv_enables: array<arr_max_u32_stages>;
+@group(0) @binding(0) var<storage, read_write> in_sources: array<array<array<u32, u32_max_per_stage * 32>, total_stages>>;
+@group(0) @binding(1) var<storage, read_write> in_and_enables: array<arr_max_u32_stages>;
+@group(0) @binding(2) var<storage, read_write> in_xor_enables: array<arr_max_u32_stages>;
+@group(0) @binding(3) var<storage, read_write> in_inv_enables: array<arr_max_u32_stages>;
 @group(0) @binding(4) var<storage, read_write> machine_state_q: array<arr_max_u32_stages>;
 @group(0) @binding(5) var<storage, read_write> machine_state_d: array<arr_max_u32_stages>;
 @group(0) @binding(6) var<storage, read> stimuli: array<arr_max_u32, stimuli_length>;
-// @group(0) @binding(7) var<storage, read> golden: array<arr_max_u32, stimuli_length>;
-@group(0) @binding(7) var<storage, read_write> output: array<array<array<u32, u32_per_stage[total_stages - 1]>, stimuli_length>>;
+@group(0) @binding(7) var<storage, read> golden: array<arr_max_u32, stimuli_length>;
+@group(0) @binding(8) var<storage, read_write> output: array<array<array<u32, u32_per_stage[total_stages - 1]>, stimuli_length>>;
+@group(0) @binding(9) var<storage, read_write> output_vs_golden: array<u32>;
 
 struct Immediates {
     start_stimuli: u32,
     mode: u32,
-    // salt: u32
+    salt: u32
 };
 var<immediate> immediates: Immediates;
 
@@ -66,15 +67,6 @@ fn main(
     @builtin(num_workgroups) num_workgroups: vec3<u32>,
     @builtin(local_invocation_index) local_invocation_index: u32,
 ) {
-    _ = in_sources[0];
-    _ = in_and_enables[0];
-    _ = in_xor_enables[0];
-    _ = in_inv_enables[0];
-    _ = machine_state_q[0];
-    _ = machine_state_d[0];
-    _ = stimuli[0];
-    _ = output[0];
-
     let workgroup_linear = workgroup_id.z * num_workgroups.y * num_workgroups.x +
                         workgroup_id.y * num_workgroups.x +
                         workgroup_id.x;
@@ -89,25 +81,38 @@ fn main(
         return;
     }
 
-    if(immediates.start_stimuli == 0) {
-        for(var i : u32 = 0; i < total_stages; i++) {
-            for(var j : u32 = 0; j < u32_max_per_stage; j++) {
-                machine_state_q[machine][i][j] = 0;
-                machine_state_d[machine][i][j] = 0;
+    if(immediates.mode == 0) {
+        if(immediates.start_stimuli == 0) {
+            output_vs_golden[machine] = 0;
+            for(var i : u32 = 0; i < total_stages; i++) {
+                for(var j : u32 = 0; j < u32_max_per_stage; j++) {
+                    machine_state_q[machine][i][j] = 0;
+                    machine_state_d[machine][i][j] = 0;
+                }
             }
         }
-    }
 
-    for(var i : u32 = 0; i < stimuli_per_dispatch; i++) {
-        let stimuli_idx = immediates.start_stimuli + i;
-        if (stimuli_idx < stimuli_length) {
-            for(var stage : u32 = 0; stage < total_stages; stage++) {
-                calculate_stage(machine, stage, stimuli_idx);
-            }
-            machine_state_q[machine] = machine_state_d[machine];
-            for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
-                output[machine][stimuli_idx][u] = machine_state_q[machine][total_stages - 1][u];
+        for(var i : u32 = 0; i < stimuli_per_dispatch; i++) {
+            let stimuli_idx = immediates.start_stimuli + i;
+            if (stimuli_idx < stimuli_length) {
+                for(var stage : u32 = 0; stage < total_stages; stage++) {
+                    calculate_stage(machine, stage, stimuli_idx);
+                }
+                machine_state_q[machine] = machine_state_d[machine];
+                for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
+                    output[machine][stimuli_idx][u] = machine_state_q[machine][total_stages - 1][u];
+                    output_vs_golden[machine] += countOneBits(output[machine][stimuli_idx][u] ^ golden[stimuli_idx][u]);
+                }
             }
         }
+        if (immediates.start_stimuli == stimuli_length) {
+
+        }
+    } else if(immediates.mode == 1) {
+        // var total_mistakes : u32 = 0;
+        // for(var i : u32 = 0; i < total; i++) {
+        //     total_mistakes += output_vs_golden[i];
+        // }
+        // var avg_mistakes : u32 = total_mistakes /= total;
     }
 }

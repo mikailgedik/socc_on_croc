@@ -27,7 +27,7 @@ macro_rules! decl_consts {
 }
 
 // First stage is a "dummy" stage for the input!
-const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(17,4096,4096,4096,4096,45);
+const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(32,128,128,32);
 
 pub const U32_PER_STAGE: &[usize] = _NO_CONSTS.0;
 pub const FF_PER_STAGE: &[usize] = _NO_CONSTS.1;
