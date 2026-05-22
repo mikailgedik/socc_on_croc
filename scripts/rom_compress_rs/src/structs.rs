@@ -27,7 +27,7 @@ macro_rules! decl_consts {
 }
 
 // First stage is a "dummy" stage for the input!
-const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(32,128,128,32);
+const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(32,32);
 
 pub const U32_PER_STAGE: &[usize] = _NO_CONSTS.0;
 pub const FF_PER_STAGE: &[usize] = _NO_CONSTS.1;
@@ -64,11 +64,13 @@ module %MODULE_NAME% #(
 endmodule
 "#;
 
-pub fn vec_from_arrs<'a, T : Iterator<Item = &'a [u32;SIZE]>, const SIZE: usize>(iter: T) -> Vec<u8> {
+pub fn vec_from_arrs<'a, T : Iterator<Item = &'a [[u32;4];SIZE]>, const SIZE: usize>(iter: T) -> Vec<u8> {
     let mut r = Vec::new();
     for i in iter {
         for j in i {
-            r.extend(j.to_le_bytes());
+            for k in j {
+                r.extend(k.to_le_bytes());
+            }
         }
     }
     r
@@ -87,15 +89,13 @@ pub fn vec_from_arrs_u16<'a, T : Iterator<Item = &'a [(u16, u16);SIZE]>, const S
 #[derive(Debug, Clone, Copy)]
 pub struct StageComb {
     gates: usize,
-    sources: [(u16,u16); U32_MAX_PER_STAGE * 32],
-    and_enable: [u32; U32_MAX_PER_STAGE],
-    xor_enable: [u32; U32_MAX_PER_STAGE],
-    inv_enable: [u32; U32_MAX_PER_STAGE],
+    pub sources: [(u16,u16); U32_MAX_PER_STAGE * 32],
+    pub bitfiddle_constants: [[u32; 4]; U32_MAX_PER_STAGE],
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Machine {
-    comb: [StageComb; U32_PER_STAGE.len()],
+    pub comb: [StageComb; U32_PER_STAGE.len()],
 }
 
 
@@ -105,9 +105,7 @@ impl StageComb {
         StageComb{
             gates: gates,
             sources: [(0,0); U32_MAX_PER_STAGE * 32],
-            and_enable: [0; U32_MAX_PER_STAGE],
-            xor_enable: [0; U32_MAX_PER_STAGE],
-            inv_enable: [0; U32_MAX_PER_STAGE]
+            bitfiddle_constants: [[0; 4]; U32_MAX_PER_STAGE],
         }
     }
 
@@ -135,7 +133,11 @@ impl StageComb {
         }
         let mut r = Vec::with_capacity(self.gates);
         for i in 0..(self.gates.div_ceil(32)) {
-            let v = tuple_to_sv_rhs((self.and_enable[i], self.xor_enable[i], self.inv_enable[i]));
+            let and = self.bitfiddle_constants[i][0];
+            let xor = self.bitfiddle_constants[i][1];
+            let inv = self.bitfiddle_constants[i][2];
+            
+            let v = tuple_to_sv_rhs((and, xor, inv));
             let end = min(self.gates, (i + 1) * 32) - i * 32;
             r.extend(&v[0..end]);
         }
@@ -149,7 +151,6 @@ impl Machine {
             comb: FF_PER_STAGE.iter().map(|u| {
                 StageComb::new(*u)
             }).collect::<Vec<StageComb>>().try_into().expect("Very very bad"),
-            // stage_q: [[0u32; U32_MAX_PER_STAGE]; U32_PER_STAGE.len()]
         }
     }
 
@@ -173,16 +174,16 @@ impl Machine {
                 
                 c.sources[u] = (s1, s2);
             }
-            
-            rng.fill(&mut c.and_enable[0..U32_PER_STAGE[i]]);
-            rng.fill(&mut c.xor_enable[0..U32_PER_STAGE[i]]);
-            rng.fill(&mut c.inv_enable[0..U32_PER_STAGE[i]]);
+
+            for arr in &mut c.bitfiddle_constants[0..U32_PER_STAGE[i]] {
+                rng.fill(arr);
+            }
 
             if c.gates % 32 != 0 {
                 let mask : u32 = (1 << c.gates % 32) - 1;
-                c.and_enable[U32_PER_STAGE[i] - 1] = mask;
-                c.xor_enable[U32_PER_STAGE[i] - 1] = mask;
-                c.inv_enable[U32_PER_STAGE[i] - 1] = mask;
+                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][0] = mask;
+                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][1] = mask;
+                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][2] = mask;
             }
         }
     }
@@ -205,16 +206,9 @@ impl Machine {
         vec_from_arrs_u16(self.comb.iter().skip(1).map(|i| &i.sources))
     }
 
-    pub fn get_and(&self) -> Vec<u8> {
-        vec_from_arrs(self.comb.iter().skip(1).map(|i| &i.and_enable))
+    pub fn get_bitfiddle(&self) -> Vec<u8> {
+        vec_from_arrs(self.comb.iter().skip(1).map(|i| &i.bitfiddle_constants))
     }
-    pub fn get_xor(&self) -> Vec<u8> {
-        vec_from_arrs(self.comb.iter().skip(1).map(|i| &i.xor_enable))
-    }
-    pub fn get_inv(&self) -> Vec<u8> {
-        vec_from_arrs(self.comb.iter().skip(1).map(|i| &i.inv_enable))
-    }
-
 
     pub fn to_sv(&self, module_name: &str) -> String {
         let mut logic_decls : String = "".into();

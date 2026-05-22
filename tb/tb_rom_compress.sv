@@ -9,8 +9,8 @@ module tb_rom_compress;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-    localparam ROM_INPUT_WIDTH = 17;
-    localparam ROM_OUTPUT_WIDTH = 45;
+    localparam ROM_INPUT_WIDTH = 32;
+    localparam ROM_OUTPUT_WIDTH = 32;
     // localparam STAGE_COUNT = 1; // defines latency
     localparam INTS_PER_STIMULUS = (ROM_INPUT_WIDTH+31)/32;
     localparam INTS_PER_STIMULUS_OUT = (ROM_OUTPUT_WIDTH+31)/32;
@@ -61,7 +61,7 @@ module tb_rom_compress;
       enable = '1;
 
         // TODO
-        capture_image("stimuli/ram_init.bin", "output.bin");
+        capture_image("stimuli/ram_init.bin", "output-ve.bin");
 
       enable = '0;
       eoc = 1;
