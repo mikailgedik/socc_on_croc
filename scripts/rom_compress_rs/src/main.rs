@@ -10,8 +10,9 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 const WORKERS : [u32; 3] = [4, 4, 2];
-const STIMULI_PER_DISPATCH : u32 = 512;
-const STIMULI_TRIMMER : usize = 1024 * 1; // For testing only to reduce runtime size
+const STIMULI_TRIMMER : usize = 16; // For testing only to reduce runtime size
+const STIMULI_PER_DISPATCH : u32 = 48;
+
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
@@ -33,7 +34,7 @@ pub async fn main() -> anyhow::Result<()> {
     stimuli_u8.extend([0u8; size_of::<u32>() * structs::U32_PER_STAGE[0] * PADDING_STIMS]);
     let mut gpu = GpuRuntime::new(machines, &stimuli_u8, &golden).await?;
     gpu.run().await?;
-
+    gpu.store_results().await?;
     log::info!("Success!");
     Ok(())
 }
@@ -156,7 +157,7 @@ impl GpuRuntime {
             &wgpu::PipelineLayoutDescriptor {
                 label: Some("pipeline layout"),
                 bind_group_layouts: &[Some(&pipeline_bindgroup_layout0)],
-                immediate_size: 12,
+                immediate_size: 16,
             }
         );
 
@@ -234,14 +235,16 @@ impl GpuRuntime {
         });
 
         let output_vs_golden_buff = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("golden"),
-            contents: &vec![0xFFu8; machines.len() * 2 * size_of::<u32>()],
-            usage: wgpu::BufferUsages::STORAGE,
+            label: Some("output vs golden"),
+            // We can safely assume that the very first "old" machine produces bogus
+            // This is inteded that the very first "new" machine immediately overwrites the old machine
+            contents: &vec![0xFFu8; machines.len() * 4 * size_of::<u32>()],
+            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
         });
 
         let temp_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("temp"),
-            size: output_buffer.size(),
+            size: (size_of::<u32>() * 32 * structs::U32_MAX_PER_STAGE * structs::U32_PER_STAGE.len() *std::cmp::max(machines.len(), stimuli_amount)) as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -325,8 +328,14 @@ impl GpuRuntime {
         let s : [u32; 8]= [0xABAF_4321, 0xdeadbeef, 0x4978_2348, 0x7cbd_46da,
                             0x4321_4329, 0xA67b_d8d4, 0x2242_a421,0x25bc_762c];
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
-        const TOTAL_SIMS : u32 = 4096;
-        const MAX_PER_ENCODER : u32 = 128;
+        const TOTAL_SIMS : u32 = 2;
+        const MAX_PER_ENCODER : u32 = 32;
+        // T defines how much delta is tolerated at total. If the delta is X, the chances of
+        // the chances of acceptance are 2^(-X/T)
+        // Ideally we want to define that at the beginning, if every bit is wrong, there is an acceptance rate of 1/2
+        // Thus,  2^(-X/T_0) == 0.5 -> T_0 = MAX_ERRORS
+        // The temperature should decrease too with each repetion. Algorithm can be linear
+        const START_TEMP : f32 = structs::FF_PER_STAGE[structs::FF_PER_STAGE.len() - 1] as f32;
         {
             for kappa in 0..TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) {
                 let (tx, rx) = bounded(1);
@@ -339,36 +348,30 @@ impl GpuRuntime {
                 let mut encoder = self.device.create_command_encoder(&Default::default());
                 
                 for simulation_iter in (kappa * MAX_PER_ENCODER)..std::cmp::min((kappa + 1) * MAX_PER_ENCODER, TOTAL_SIMS) {
+                    let iterations_left_normalized : f32 = 1.0 - (simulation_iter + 1) as f32 / (TOTAL_SIMS as f32);
+                    let temperature : f32 = START_TEMP * iterations_left_normalized;
+                    // TODO decrease this with time?
+                    let randomization_chance = (0xFFFF as f32 * (if simulation_iter != 0 { 0.05f32 } else { 1.0f32 })) as u32;
                     {
                         let mut pass = encoder.begin_compute_pass(&Default::default());
                         pass.set_pipeline(&self.pipeline);
-                        let immediates : [u32; 3]= [
+                        let immediates : [u32; 4]= [
                             2u32, // Mode == randomize
-                            0xFFFFu32 - (simulation_iter) * 0xFFFF / TOTAL_SIMS, // Change of mutation (0x0 - 0xFFFF)
+                            randomization_chance, // Change of mutation (0x0 - 0xFFFF)
                             rng.next_u32(), // Random seed
+                            u32::from_le_bytes(temperature.to_le_bytes())
                         ];
                         pass.set_immediates(0, bytemuck::cast_slice(&immediates));
                         pass.set_bind_group(0, &self.bind_group, &[]);
                         pass.dispatch_workgroups(num_dispatches, 1, 1);
                     }
-                    // {
-                    //     let mut pass = encoder.begin_compute_pass(&Default::default());
-                    //     pass.set_pipeline(&self.pipeline);
-                    //     let immediates : [u32; 3]= [
-                    //         3u32, // Mode == test random numbers
-                    //         0u32, //
-                    //         rng.next_u32(), // Random seed
-                    //     ];
-                    //     pass.set_immediates(0, bytemuck::cast_slice(&immediates));
-                    //     pass.set_bind_group(0, &self.bind_group, &[]);
-                    //     pass.dispatch_workgroups(num_dispatches, 1, 1);
-                    // }
-                    for i in 0..(self.stimuli_amount.div_ceil(batch_stimuli_size)) {            
+
+                    for i in 0..(self.stimuli_amount.div_ceil(batch_stimuli_size)) {
                         let mut pass = encoder.begin_compute_pass(&Default::default());
                         pass.set_pipeline(&self.pipeline);
                         let immediates : [u32; 3]= [
                             1u32, // Mode == calculate
-                            (i as u32 * STIMULI_PER_DISPATCH), //
+                            (i as u32 * STIMULI_PER_DISPATCH),
                             0u32, // Random seed
                         ];
                         pass.set_immediates(0, bytemuck::cast_slice(&immediates));
@@ -381,21 +384,36 @@ impl GpuRuntime {
                 self.device.poll(wgpu::PollType::wait_indefinitely())?;
                 log::info!("Iteration group {}/{}", kappa + 1, TOTAL_SIMS.div_ceil(MAX_PER_ENCODER));
                 rx.recv_async().await?;
+                let output_vs_golden_u8 = self.read_buffer(&self.buffers.output_vs_golden).await?;
+                let output_vs_golden : &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_u8);
+                for omega in output_vs_golden {
+                    log::info!("{}, {}, {}, {}", omega[0], omega[1],omega[2],omega[3]);
+                }
             }
         }
 
+        Ok(())
+    }
+
+    pub async fn store_results(&mut self) -> anyhow::Result<()> {
         let output_data = self.read_buffer(&self.buffers.output).await?;
         
         let machine_sources_raw  : Vec<u8> = self.read_buffer(&self.buffers.sources_new).await?;
         let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_new).await?;
-        log::info!("{:?} {:?}", machine_sources_raw.len(), self.buffers.sources_new.size());
+        let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
         
         let machine_sources : &[[[u32; structs::U32_MAX_PER_STAGE * 32]; structs::U32_PER_STAGE.len() - 1]]
             = bytemuck::cast_slice(&machine_sources_raw);
         let machine_bitfiddle : &[[[[u32; 4]; structs::U32_MAX_PER_STAGE]; structs::U32_PER_STAGE.len() - 1]]
             = bytemuck::cast_slice(&machine_bitfiddle_raw);
-        log::info!("{:?} {:?}", machine_sources.len(), self.machines.len());
+        let output_vs_golden : &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_raw);
 
+        let mut best_machine = 0;
+        for i in 0..output_vs_golden.len() {
+            if output_vs_golden[best_machine][1] > output_vs_golden[i][1] {
+                best_machine = i;
+            }
+        }
 
         for i in 0..self.machines.len() {
             let m = &mut self.machines[i];
@@ -409,7 +427,7 @@ impl GpuRuntime {
             }
         }
 
-        let selected_machine = self.machines.len() / 2;
+        let selected_machine = best_machine;
 
         let machine_sv = self.machines[selected_machine].to_sv("test_gen_rom");
         fs::write("../../src/generated/test_gen_rom.sv", machine_sv)?;

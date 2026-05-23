@@ -6,6 +6,8 @@ const prev_stage_width_ff = array<u32, %TOTAL_STAGES% + 1>(%PREV_STAGE_WIDTH_FF%
 const stimuli_length : u32 = %STIMULI_LENGTH%;
 const stimuli_per_dispatch : u32 = %STIMULI_PER_DISPATCH%;
 
+const MAX_MISTAKES = prev_stage_width_ff[total_stages] * stimuli_length;
+
 override workers_x : u32 = 1;
 override workers_y : u32 = 1;
 override workers_z : u32 = 1;
@@ -22,12 +24,13 @@ alias arr_max_u32_stages = array<arr_max_u32, total_stages>;
 @group(0) @binding(6) var<storage, read> stimuli: array<array<u32, (prev_stage_width_ff[0] + 31) / 32>, stimuli_length>;
 @group(0) @binding(7) var<storage, read> golden: array<array<u32, u32_per_stage[total_stages - 1]>, stimuli_length>;
 @group(0) @binding(8) var<storage, read_write> output: array<array<array<u32, u32_per_stage[total_stages - 1]>, stimuli_length>, total_machines>;
-@group(0) @binding(9) var<storage, read_write> output_vs_golden: array<vec2<u32>, total_machines>;
+@group(0) @binding(9) var<storage, read_write> output_vs_golden: array<vec4<u32>, total_machines>;
 
 struct Immediates {
     mode: u32,
     start_stimuli: u32,
     seed1: u32,
+    temperature_bits: u32
 };
 var<immediate> immediates: Immediates;
 
@@ -37,6 +40,7 @@ struct XorWowState {
     x: array<u32, 5>,
     counter: u32,
 };
+
 fn random_xorwow(state: ptr<function, XorWowState>) -> u32 {
     // Algorithm "xorwow" from p. 5 of Marsaglia, "Xorshift RNGs"
     var t : u32 = (*state).x[4];
@@ -83,6 +87,98 @@ fn calculate_stage(machine: u32, stage: u32, stimuli_idx: u32) {
     }
 }
 
+fn run_new_machine(machine: u32) {
+    if(immediates.start_stimuli == 0) {
+        output_vs_golden[machine][1] = 0;
+
+        for(var i : u32 = 0; i < total_stages; i++) {
+            for(var j : u32 = 0; j < u32_max_per_stage; j++) {
+                machine_state_q[machine][i][j] = 0;
+                machine_state_d[machine][i][j] = 0;
+            }
+        }
+    }
+
+    for(var i : u32 = 0; i < stimuli_per_dispatch; i++) {
+        let stimuli_idx = immediates.start_stimuli + i;
+        if (stimuli_idx < stimuli_length) {
+            for(var stage : u32 = 0; stage < total_stages; stage++) {
+                calculate_stage(machine, stage, stimuli_idx);
+            }
+            machine_state_q[machine] = machine_state_d[machine];
+            for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
+                output[machine][stimuli_idx][u] = machine_state_q[machine][total_stages - 1][u];
+            }
+            if (stimuli_idx >= total_stages + 1) {
+                for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
+                    output_vs_golden[machine][1] += countOneBits(output[machine][stimuli_idx][u] ^ golden[stimuli_idx][u]);
+                }
+            }
+        }
+    }
+}
+
+fn replace_old_machine_if_new_is_better(machine: u32, rng: ptr<function, XorWowState>) {
+    // After running, compare with the old machine
+    var new_machine_better = output_vs_golden[machine][1] < output_vs_golden[machine][0];
+    var overridden = false;
+    if (!new_machine_better && output_vs_golden[machine][0] != 0) {
+        let temp : f32 = bitcast<f32>(immediates.temperature_bits);
+        if (temp > 0.000001) {
+            let delta = f32(output_vs_golden[machine][0]) - f32(output_vs_golden[machine][1]);
+            let exponent = delta / temp;
+            if (exponent > -100) {
+                var probability = exp2(exponent);
+                if ((random_xorwow(rng) & 0xFFFF) < u32(probability * 0xFFFF)) {
+                    overridden = true;
+                    output_vs_golden[machine][3]++;
+                }
+            }
+        }
+        
+    }
+    if (new_machine_better || overridden) {
+        // New machine is better than old machine, so copy
+        output_vs_golden[machine][0] = output_vs_golden[machine][1];
+        bitfiddle_old[machine] = bitfiddle_new[machine];
+        sources_old[machine] = sources_new[machine];
+        output_vs_golden[machine][2]++;
+    }
+}
+
+fn create_new_machine(machine: u32, rng: ptr<function, XorWowState>) {
+    if(output_vs_golden[machine][0] == 0) {
+        return; // Working machine found - stop
+    }
+    for(var stage : u32 = 0; stage < total_stages; stage++) {
+        for(var u : u32 = 0; u < u32_per_stage[stage]; u++) {
+            var fiddlers : vec4<u32> = bitfiddle_old[machine][stage][u];
+            for(var b : u32 = 0; b < 32; b++) {
+                var src : u32 = sources_old[machine][stage][32 * u + b];
+                var rand_val : u32 = random_xorwow(rng);
+                if((rand_val & 0xFFFF) < immediates.start_stimuli) {
+                    fiddlers[0] ^= ((rand_val >> 16) & 1) << b;
+                    fiddlers[1] ^= ((rand_val >> 17) & 1) << b;
+                    fiddlers[2] ^= ((rand_val >> 18) & 1) << b;
+                    
+                    rand_val = random_xorwow(rng);
+                    src = (rand_val % prev_stage_width_ff[stage]) & 0xFFFF;
+                    src |= (((rand_val >> 16) % prev_stage_width_ff[stage]) & 0xFFFF) << 16;
+                }
+                sources_new[machine][stage][32 * u + b] = src;
+            }
+            bitfiddle_new[machine][stage][u] = fiddlers;
+        }
+        let res : u32 = prev_stage_width_ff[stage + 1] % 32;
+        if (res != 0) {
+            let mask : u32 = u32((1 << res) - 1);
+            bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][0] &= mask;
+            bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][1] &= mask;
+            bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][2] &= mask;
+        }
+    }
+}
+
 // Tells wgpu that this function is a valid compute pipeline entry_point
 @compute
 // Specifies the "dimension" of this work group
@@ -111,33 +207,7 @@ fn main(
         //NOP i guess? TODO?
         // Placeholder for now
     } else if(immediates.mode == 1) {
-        if(immediates.start_stimuli == 0) {
-            output_vs_golden[machine][1] = 0;
-            for(var i : u32 = 0; i < total_stages; i++) {
-                for(var j : u32 = 0; j < u32_max_per_stage; j++) {
-                    machine_state_q[machine][i][j] = 0;
-                    machine_state_d[machine][i][j] = 0;
-                }
-            }
-        }
-
-        for(var i : u32 = 0; i < stimuli_per_dispatch; i++) {
-            let stimuli_idx = immediates.start_stimuli + i;
-            if (stimuli_idx < stimuli_length) {
-                for(var stage : u32 = 0; stage < total_stages; stage++) {
-                    calculate_stage(machine, stage, stimuli_idx);
-                }
-                machine_state_q[machine] = machine_state_d[machine];
-                for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
-                    output[machine][stimuli_idx][u] = machine_state_q[machine][total_stages - 1][u];
-                }
-                if (stimuli_idx >= total_stages + 1) {
-                    for(var u : u32 = 0; u < u32_per_stage[total_stages - 1]; u++) {
-                        output_vs_golden[machine][1] += countOneBits(output[machine][stimuli_idx][u] ^ golden[stimuli_idx][u]);
-                    }
-                }
-            }
-        }
+        run_new_machine(machine);
     } else if(immediates.mode == 2) {
         var rng: XorWowState = XorWowState(array<u32, 5>(immediates.seed1 ^ machine, 0xdeadbeef, 0x78a8fda8, immediates.seed1 + machine, immediates.seed1 & machine),
             (immediates.seed1 << 3) + machine
@@ -145,46 +215,11 @@ fn main(
         for(var i = 0; i < 32; i++) {
             random_xorwow(&rng);
         }
+        
+        replace_old_machine_if_new_is_better(machine, &rng);
 
-        // After running, compare with the old machine
-        if (output_vs_golden[machine][1] < output_vs_golden[machine][0]) {
-            // New machine is better than old machine, so copy
-            output_vs_golden[machine][0] = output_vs_golden[machine][1];
-            bitfiddle_old[machine] = bitfiddle_new[machine];
-            sources_old[machine] = sources_new[machine];
-        }
-        if(output_vs_golden[machine][0] == 0) {
-            return; // Working machine found - stop
-        }
-        for(var stage : u32 = 0; stage < total_stages; stage++) {
-            for(var u : u32 = 0; u < u32_per_stage[stage]; u++) {
-                var fiddlers : vec4<u32> = bitfiddle_old[machine][stage][u];
-                for(var b : u32 = 0; b < 32; b++) {
-                    var src : u32 = sources_old[machine][stage][32 * u + b];
-                    var rand_val : u32 = random_xorwow(&rng);
-                    if((rand_val & 0xFFFF) < immediates.start_stimuli) {
-                        fiddlers[0] ^= ((rand_val >> 16) & 1) << b;
-                        fiddlers[1] ^= ((rand_val >> 17) & 1) << b;
-                        fiddlers[2] ^= ((rand_val >> 18) & 1) << b;
-                        
-                        rand_val = random_xorwow(&rng);
-                        src = (rand_val % prev_stage_width_ff[stage]) & 0xFFFF;
-                        src |= (((rand_val >> 16) % prev_stage_width_ff[stage]) & 0xFFFF) << 16;
-                    }
-                    sources_new[machine][stage][32 * u + b] = src;
-                }
-                bitfiddle_new[machine][stage][u] = fiddlers;
-            }
-            let res : u32 = prev_stage_width_ff[stage + 1] % 32;
-            if (res != 0) {
-                let mask : u32 = u32((1 << res) - 1);
-                bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][0] &= mask;
-                bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][1] &= mask;
-                bitfiddle_new[machine][stage][u32_per_stage[stage] - 1][2] &= mask;
-            }
-        }
-
-    } else if(immediates.mode == 3) {
+        create_new_machine(machine, &rng);     
+    } else if(immediates.mode == 1024) {
         var rng: XorWowState = XorWowState(array<u32, 5>(immediates.seed1 ^ machine, 0xdeadbeef, 0x78a8fda8, immediates.seed1 + machine, immediates.seed1 & machine),
             (immediates.seed1 << 3) + machine
         );

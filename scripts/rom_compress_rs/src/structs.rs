@@ -16,22 +16,40 @@ macro_rules! max {
     }};
 }
 
+macro_rules! add_ign_first {
+    ($_: expr) => {
+        panic!("More than one needed")
+    };
+    ($_: expr, $($z: expr),+) => {{
+        add!($($z),*)
+    }};
+}
+
+macro_rules! add {
+    ($x: expr) => ($x);
+    ($x: expr, $($z: expr),+) => {{
+        $x + add!($($z),*)
+    }};
+}
+
 macro_rules! decl_consts {
     ($($val:literal),* $(,)?) => {
         (
         &[$(($val + 31) / 32),*],
         &[$($val),*],
-        (max!($($val),*) + 31) / 32
+        (max!($($val),*) + 31) / 32,
+        add_ign_first!($($val),*)
     )
     };
 }
 
 // First stage is a "dummy" stage for the input!
-const _NO_CONSTS : (&[usize], &[usize], usize) = decl_consts!(32,32);
+const _NO_CONSTS : (&[usize], &[usize], usize, usize) = decl_consts!(32,256,256,256,32);
 
 pub const U32_PER_STAGE: &[usize] = _NO_CONSTS.0;
 pub const FF_PER_STAGE: &[usize] = _NO_CONSTS.1;
 pub const U32_MAX_PER_STAGE: usize = _NO_CONSTS.2;
+pub const TOTAL_FF: usize = _NO_CONSTS.3;
 
 const SV_ZERO : &'static str = "'0";
 const SV_XOR : &'static str = "(a ^ b)";
