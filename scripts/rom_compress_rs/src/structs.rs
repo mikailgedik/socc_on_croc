@@ -1,24 +1,6 @@
-use rand::{Rng, SeedableRng};
-use rand::RngExt;
-use rand::rngs::StdRng;
-
-use std::cmp::min;
-
-macro_rules! max {
-    ($x: expr) => ($x);
-    ($x: expr, $($z: expr),+) => {{
-        let y = max!($($z),*);
-        if $x > y {
-            $x
-        } else {
-            y
-        }
-    }};
-}
-
 macro_rules! add_ign_first {
     ($_: expr) => {
-        panic!("More than one needed")
+        compile_error!("More than one needed")
     };
     ($_: expr, $($z: expr),+) => {{
         add!($($z),*)
@@ -35,21 +17,22 @@ macro_rules! add {
 macro_rules! decl_consts {
     ($($val:literal),* $(,)?) => {
         (
-        &[$(($val + 31) / 32),*],
-        &[$($val),*],
-        (max!($($val),*) + 31) / 32,
-        add_ign_first!($($val),*)
-    )
+            add_ign_first!($($val),*),
+            &[$($val),*]
+        )
     };
 }
 
-// First stage is a "dummy" stage for the input!
-const _NO_CONSTS : (&[usize], &[usize], usize, usize) = decl_consts!(32,256,256,256,32);
+// First entry is the size of the input!
+const _INTERNAL_CONSTANTS : (usize, &[usize]) = decl_consts!(32,1024,32);
 
-pub const U32_PER_STAGE: &[usize] = _NO_CONSTS.0;
-pub const FF_PER_STAGE: &[usize] = _NO_CONSTS.1;
-pub const U32_MAX_PER_STAGE: usize = _NO_CONSTS.2;
-pub const TOTAL_FF: usize = _NO_CONSTS.3;
+pub const TOTAL_FF : usize = _INTERNAL_CONSTANTS.0;
+pub const U32_NEEDED_FOR_FF : usize = (TOTAL_FF + 31) / 32;
+pub const PREVIOUS_STAGE_FF : &[usize] = _INTERNAL_CONSTANTS.1;
+pub const OUTPUT_START: usize = TOTAL_FF - PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1];
+pub const TOTAL_MACHINES : usize = 32;
+pub const U32_PER_STIMULI : usize= (PREVIOUS_STAGE_FF[0] + 31) / 32;
+pub const U32_PER_OUTPUT : usize= (PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] + 31) / 32;
 
 const SV_ZERO : &'static str = "'0";
 const SV_XOR : &'static str = "(a ^ b)";
@@ -82,184 +65,72 @@ module %MODULE_NAME% #(
 endmodule
 "#;
 
-pub fn vec_from_arrs<'a, T : Iterator<Item = &'a [[u32;4];SIZE]>, const SIZE: usize>(iter: T) -> Vec<u8> {
-    let mut r = Vec::new();
-    for i in iter {
-        for j in i {
-            for k in j {
-                r.extend(k.to_le_bytes());
-            }
-        }
-    }
-    r
-}
-
-pub fn vec_from_arrs_u16<'a, T : Iterator<Item = &'a [(u16, u16);SIZE]>, const SIZE: usize>(iter: T) -> Vec<u8> {
-    let mut r = Vec::new();
-    for i in iter {
-        for (j1,j2) in i {
-            r.extend((*j1 as u32 | ((*j2 as u32) << 16)).to_le_bytes());
-        }
-    }
-    r
-}
-
 #[derive(Debug, Clone, Copy)]
-pub struct StageComb {
-    gates: usize,
-    pub sources: [(u16,u16); U32_MAX_PER_STAGE * 32],
-    pub bitfiddle_constants: [[u32; 4]; U32_MAX_PER_STAGE],
+pub struct Machines {
+    pub bitfiddle: [[[u32; 4]; U32_NEEDED_FOR_FF]; TOTAL_MACHINES],
+    pub sources: [[u32; U32_NEEDED_FOR_FF * 32]; TOTAL_MACHINES],
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Machine {
-    pub comb: [StageComb; U32_PER_STAGE.len()],
-}
-
-
-impl StageComb {
-    pub fn new(gates: usize) -> Self {
-        assert!(U32_MAX_PER_STAGE * 32 >= gates);
-        StageComb{
-            gates: gates,
-            sources: [(0,0); U32_MAX_PER_STAGE * 32],
-            bitfiddle_constants: [[0; 4]; U32_MAX_PER_STAGE],
-        }
-    }
-
-    pub fn to_sv_rhs(&self) -> Vec<&'static str> {
-        fn tuple_to_sv_rhs(mut and_xor_inv: (u32, u32, u32)) -> [&'static str; 32] {
-            let mut r = [""; 32];
-            for i in 0..32 {
-                r[i] = match ((and_xor_inv.1 & 1) << 0) | ((and_xor_inv.0 & 1) << 1) | ((and_xor_inv.2 & 1) << 2) {
-                    0b000 => SV_ZERO,
-                    0b001 => SV_XOR,
-                    0b010 => SV_AND,
-                    0b011 => SV_OR,
-                    0b100 => SV_ONE,
-                    0b101 => SV_XNOR,
-                    0b110 => SV_NAND,
-                    0b111 => SV_NOR,
-                    _ => panic!("Oh no"),
-                };
-
-                and_xor_inv.0 >>= 1;
-                and_xor_inv.1 >>= 1;
-                and_xor_inv.2 >>= 1;
-            }
-            r
-        }
-        let mut r = Vec::with_capacity(self.gates);
-        for i in 0..(self.gates.div_ceil(32)) {
-            let and = self.bitfiddle_constants[i][0];
-            let xor = self.bitfiddle_constants[i][1];
-            let inv = self.bitfiddle_constants[i][2];
-            
-            let v = tuple_to_sv_rhs((and, xor, inv));
-            let end = min(self.gates, (i + 1) * 32) - i * 32;
-            r.extend(&v[0..end]);
-        }
-        r
-    }
-}
-
-impl Machine {
+impl Machines {
     pub fn new() -> Self {
-        Machine {
-            comb: FF_PER_STAGE.iter().map(|u| {
-                StageComb::new(*u)
-            }).collect::<Vec<StageComb>>().try_into().expect("Very very bad"),
+        Self {
+            bitfiddle: [[[0u32; 4]; U32_NEEDED_FOR_FF]; TOTAL_MACHINES],
+            sources: [[0u32; U32_NEEDED_FOR_FF * 32]; TOTAL_MACHINES],
         }
     }
 
-    pub fn rng(&mut self, seed: u32) {
-        let mut s = [0u8; 32];
-        for i in 0..4 {
-            s[i] = seed.to_le_bytes()[i];
-        }
-        let mut rng = StdRng::from_seed(s);
+    pub fn to_sv(&self,
+        machine: usize,
+        module_name: &str) -> String {
 
-        for i in 1..U32_PER_STAGE.len() {
-            let prev_gates = self.comb[i-1].gates as u16;
-            let c = &mut self.comb[i];
+        let bitfiddle: &[[u32; 4]; U32_NEEDED_FOR_FF] = &self.bitfiddle[machine];
+        let sources: &[u32; U32_NEEDED_FOR_FF * 32] = &self.sources[machine];
 
-            for u in 0..c.gates {
-                let r = rng.next_u32();
-                let mut s1 : u16 = (r & 0xFFFF) as u16;
-                let mut s2 : u16 = ((r >> 16) & 0xFFFF) as u16;
-                s1 %= prev_gates;
-                s2 %= prev_gates;
-                
-                c.sources[u] = (s1, s2);
+        let logic_decls : String = format!("\tlogic [{TOTAL_FF}-1:0] state_d, state_q;\n");
+        let ff_stms : String = "\t\tstate_q <= rst_ni ? state_d : 'b0;\n".into();
+        let mut comb_stmts : String = "".into();
+
+        for i in 0..TOTAL_FF {
+            let b = i % 32;
+            let idx = i / 32;
+
+            let mut bits : u32 = (bitfiddle[idx][2] >> b) & 1;
+            bits = (bits << 1) | ((bitfiddle[idx][1] >> b) & 1);
+            bits = (bits << 1) | ((bitfiddle[idx][0] >> b) & 1);
+            
+            let rhs : &str = match bits {
+                0b000 => SV_ZERO,
+                0b001 => SV_AND,
+                0b010 => SV_XOR,
+                0b011 => SV_OR,
+                0b100 => SV_ONE,
+                0b101 => SV_NAND,
+                0b110 => SV_XNOR,
+                0b111 => SV_NOR,
+                _ => panic!("Oh no"),
+            };
+            let rhs_a;
+            let rhs_b;
+            if i < PREVIOUS_STAGE_FF[1] {
+                rhs_a = format!("data_i[{}]", &(sources[i] & 0xFFFF).to_string());
+                rhs_b = format!("data_i[{}]", &((sources[i] >> 16) & 0xFFFF).to_string());
+            } else {
+                rhs_a = format!("state_q[{}]", &(sources[i] & 0xFFFF).to_string());
+                rhs_b = format!("state_q[{}]", &((sources[i] >> 16) & 0xFFFF).to_string());
             }
-
-            for arr in &mut c.bitfiddle_constants[0..U32_PER_STAGE[i]] {
-                rng.fill(arr);
-            }
-
-            if c.gates % 32 != 0 {
-                let mask : u32 = (1 << c.gates % 32) - 1;
-                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][0] = mask;
-                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][1] = mask;
-                c.bitfiddle_constants[U32_PER_STAGE[i] - 1][2] = mask;
-            }
-        }
-    }
-
-    // pub fn run(&mut self, stimuli: Vec<[u32; U32_MAX_PER_STAGE]>) -> Vec<[u32; U32_MAX_PER_STAGE]> {
-    //     let mut r = Vec::with_capacity(stimuli.len());
-    //     for s in stimuli {
-    //         self.stage_q[0] = s;
-    //         // Purposefully leave out 0, it is a dummy stage for the input
-    //         for i in (self.comb.len() - 1)..0 {
-    //             let (lower, higher) = self.stage_q.split_at_mut(i);
-    //             self.comb[i].calc_next_stage(&lower[lower.len() - 1], &mut higher[0]);
-    //         }
-    //         r.push(self.stage_q[self.stage_q.len() - 1]);
-    //     }
-    //     r
-    // }
-
-    pub fn get_sources(&self) -> Vec<u8> {
-        vec_from_arrs_u16(self.comb.iter().skip(1).map(|i| &i.sources))
-    }
-
-    pub fn get_bitfiddle(&self) -> Vec<u8> {
-        vec_from_arrs(self.comb.iter().skip(1).map(|i| &i.bitfiddle_constants))
-    }
-
-    pub fn to_sv(&self, module_name: &str) -> String {
-        let mut logic_decls : String = "".into();
-        let mut comb_stmts : String= "".into();
-        let mut ff_stms : String= "".into();
-        let mut prev_stage_q : String = "data_i".to_string();
-
-        // skip first stage. First stage is for input only
-        for i in 1..self.comb.len() {
-            let stage = &self.comb[i];
-            let stage_amount = stage.gates - 1;
-            logic_decls += &format!("\tlogic [{stage_amount}:0] state_{i}_d, state_{i}_q;\n");
-            ff_stms += &format!("\t\tstate_{i}_q <= rst_ni ? state_{i}_d : 'b0;\n");
-
-            let stage_rhs : Vec<&'static str> = stage.to_sv_rhs();
-            for ii in 0..stage_rhs.len() {
-                let (src_a, src_b) = (stage.sources[ii].0, stage.sources[ii].1);
-                let rhs_a = &format!("{prev_stage_q}[{src_a}]");
-                let rhs_b = &format!("{prev_stage_q}[{src_b}]");
-                let rhs = stage_rhs[ii].replace("a", rhs_a).replace("b", rhs_b);
-                comb_stmts += &format!("\t\tstate_{i}_d[{ii}] = {rhs};\n");
-            }
-                
-            prev_stage_q = format!("state_{i}_q");
-        
+            comb_stmts += &format!("\t\tstate_d[{i}] = ");
+            comb_stmts += &rhs.replace("a", &rhs_a).replace("b", &rhs_b);
+            comb_stmts += ";\n";
         }
 
-        let out_length = self.comb.len() - 1;
-        comb_stmts += &format!("\t\tdata_o = state_{out_length}_q;");
+        let out_start_ff : usize = PREVIOUS_STAGE_FF[1..PREVIOUS_STAGE_FF.len() - 1].iter().fold(0, |a,b| a + b );
+        let out_end_ff : usize = out_start_ff + PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1];
+        comb_stmts += &format!("\t\tdata_o = state_q[{out_end_ff}-1:{out_start_ff}];");
+
         return SV_TEMPLATE.replace(
             "%MODULE_NAME%", &module_name).replace(
-            "%WIDTH_IN%", &(FF_PER_STAGE[0] - 1).to_string()).replace(
-            "%WIDTH_OUT%", &(FF_PER_STAGE[FF_PER_STAGE.len() - 1] - 1).to_string()).replace(
+            "%WIDTH_IN%", &(PREVIOUS_STAGE_FF[0] - 1).to_string()).replace(
+            "%WIDTH_OUT%", &(PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] - 1).to_string()).replace(
             "%LOGIC_DECL%", &logic_decls).replace(
             "%COMB%", &comb_stmts).replace(
             "%FLIPFLOP%", &ff_stms);

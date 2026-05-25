@@ -4,38 +4,41 @@ use flume::bounded;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use anyhow;
 use std::fs;
-use crate::structs::Machine;
+use crate::structs::{Machines, PREVIOUS_STAGE_FF, U32_NEEDED_FOR_FF, TOTAL_MACHINES,
+    TOTAL_FF, OUTPUT_START, U32_PER_STIMULI, U32_PER_OUTPUT};
 
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 const WORKERS : [u32; 3] = [4, 4, 2];
-const STIMULI_TRIMMER : usize = 16; // For testing only to reduce runtime size
-const STIMULI_PER_DISPATCH : u32 = 48;
+const STIMULI_TRIMMER : usize = 256; // For testing only to reduce runtime size
+const STIMULI_PER_DISPATCH : u32 = 32;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
     write_stims()?;
-    let machines = vec![{let mut m = structs::Machine::new(); m.rng(0); m}; 64];
+    let machines = Machines::new();
 
-    const PADDING_STIMS : usize = structs::U32_PER_STAGE.len() - 2;
+    const PADDING_STIMS : usize = PREVIOUS_STAGE_FF.len() - 2;
 
     let mut stimuli_u8 : Vec<u8> = fs::read("../../verilator/stimuli/ram_init.bin")?;
     
     let mut golden_file : Vec<u8> = fs::read("../../verilator/stimuli/test1.data")?;
     golden_file.drain((4 * STIMULI_TRIMMER)..);
 
-    log::info!("{} {}", stimuli_u8.len(), golden_file.len());
+    let mut golden = vec![0u8; size_of::<u32>() * U32_PER_OUTPUT * PADDING_STIMS];
+    golden.extend(&golden_file);
 
-    let mut golden = vec![0u8; size_of::<u32>() * structs::U32_PER_STAGE[structs::U32_PER_STAGE.len() - 1] * PADDING_STIMS];
-    golden.extend(&golden_file); // TODO this only works bc output is the same width as input
-
-    stimuli_u8.extend([0u8; size_of::<u32>() * structs::U32_PER_STAGE[0] * PADDING_STIMS]);
+    stimuli_u8.extend([0u8; size_of::<u32>() * U32_PER_STIMULI * PADDING_STIMS]);
+    let mut now = std::time::Instant::now();
     let mut gpu = GpuRuntime::new(machines, &stimuli_u8, &golden).await?;
+    log::info!("Creation: {}ms", now.elapsed().as_millis());now = std::time::Instant::now();
     gpu.run().await?;
+    log::info!("Running {}ms", now.elapsed().as_millis());now = std::time::Instant::now();
     gpu.store_results().await?;
-    log::info!("Success!");
+    log::info!("Storing {}ms", now.elapsed().as_millis());now = std::time::Instant::now();
+
     Ok(())
 }
 
@@ -63,7 +66,7 @@ struct GpuBuffers {
 }
 
 struct GpuRuntime {
-    machines: Vec<Machine>,
+    machines: Machines,
     stimuli_amount: usize,
     instance: wgpu::Instance,
     adapter: wgpu::Adapter,
@@ -75,15 +78,15 @@ struct GpuRuntime {
 }
 
 impl GpuRuntime {
-    pub async fn new(machines: Vec<Machine>,
+    pub async fn new(machines: Machines,
         stimuli_u8: &[u8],
         golden: &[u8]) -> anyhow::Result<GpuRuntime> {
-
-        assert!(stimuli_u8.len() % (size_of::<u32>() * structs::U32_PER_STAGE[0]) == 0);
-        assert!(golden.len() % (size_of::<u32>() * structs::U32_PER_STAGE[structs::U32_PER_STAGE.len() - 1]) == 0);
-        assert_eq!(golden.len() / (size_of::<u32>() * structs::U32_PER_STAGE[structs::U32_PER_STAGE.len() - 1]),
-                stimuli_u8.len() / (size_of::<u32>() * structs::U32_PER_STAGE[0]));
-        let stimuli_amount = stimuli_u8.len() / (size_of::<u32>() * structs::U32_PER_STAGE[0]);
+        
+        assert!(stimuli_u8.len() % (size_of::<u32>() * U32_PER_STIMULI) == 0);
+        assert!(golden.len() % (size_of::<u32>() * U32_PER_OUTPUT) == 0);
+        assert_eq!(golden.len() / (size_of::<u32>() * U32_PER_STIMULI),
+                stimuli_u8.len() / (size_of::<u32>() * U32_PER_OUTPUT));
+        let stimuli_amount = stimuli_u8.len() / (size_of::<u32>() * U32_PER_STIMULI);
 
         let instance = wgpu::Instance::default();
         let adapter = instance
@@ -104,11 +107,12 @@ impl GpuRuntime {
         } );
 
         let  wgsl_src = fs::read_to_string("./kernel.wgsl")?
-            .replace("%TOTAL_MACHINES%", &machines.len().to_string())
-            .replace("%TOTAL_STAGES%", &(structs::U32_PER_STAGE.len() - 1).to_string())
-            .replace("%U32_MAX_PER_STAGE%", &structs::U32_MAX_PER_STAGE.to_string())
-            .replace("%U32_PER_STAGE%", &structs::U32_PER_STAGE.iter().skip(1).map(|r| r.to_string()).collect::<Vec<String>>().join(", "))
-            .replace("%PREV_STAGE_WIDTH_FF%", &structs::FF_PER_STAGE.iter().map(|r| r.to_string()).collect::<Vec<String>>().join(", "))
+            .replace("%TOTAL_MACHINES%", &TOTAL_MACHINES.to_string())
+            .replace("%TOTAL_FF%", &TOTAL_FF.to_string())
+            .replace("%U32_NEEDED_FOR_FF%", &U32_NEEDED_FOR_FF.to_string())
+            .replace("%PREVIOUS_STAGE_FF_ARRAY_LENGTH%", &PREVIOUS_STAGE_FF.len().to_string())
+            .replace("%PREVIOUS_STAGE_FF%", &PREVIOUS_STAGE_FF.iter().map(|r| r.to_string()).collect::<Vec<String>>().join(", "))
+            .replace("%OUTPUT_START%", &OUTPUT_START.to_string())
             .replace("%STIMULI_LENGTH%", &stimuli_amount.to_string())
             .replace("%STIMULI_PER_DISPATCH%", &STIMULI_PER_DISPATCH.to_string())
             ;
@@ -172,15 +176,13 @@ impl GpuRuntime {
 
         let sources_new_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("sources new"),
-            contents: &machines.iter().map(|m| m.get_sources())
-                .fold(Vec::<u8>::new(), |mut n: Vec<u8>, m: Vec<u8>| {n.extend(m); n}),
+            contents: bytemuck::cast_slice(&machines.sources),
             usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
         });
 
         let bitfiddle_new_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("bitfiddle new"),
-            contents: &machines.iter().map(|m| m.get_bitfiddle())
-                .fold(Vec::<u8>::new(), |mut n: Vec<u8>,m: Vec<u8>| {n.extend(m); n}),
+            contents: bytemuck::cast_slice(&machines.bitfiddle),
             usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
         });
 
@@ -199,9 +201,7 @@ impl GpuRuntime {
         
         let machine_state_q_buff = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("machine_state_q"),
-            size: (machines.len() *
-                (structs::U32_PER_STAGE.len() - 1)
-                * structs::U32_MAX_PER_STAGE * size_of::<u32>()) as u64,
+            size: (structs::TOTAL_MACHINES * U32_NEEDED_FOR_FF * size_of::<u32>()) as u64,
             usage: wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
@@ -227,9 +227,9 @@ impl GpuRuntime {
 
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("output"),
-            size: (machines.len()
+            size: (TOTAL_MACHINES
                 * stimuli_amount
-                * structs::U32_PER_STAGE[structs::U32_PER_STAGE.len() - 1] * size_of::<u32>()) as u64,
+                * U32_PER_OUTPUT * size_of::<u32>()) as u64,
             usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
@@ -237,14 +237,14 @@ impl GpuRuntime {
         let output_vs_golden_buff = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("output vs golden"),
             // We can safely assume that the very first "old" machine produces bogus
-            // This is inteded that the very first "new" machine immediately overwrites the old machine
-            contents: &vec![0xFFu8; machines.len() * 4 * size_of::<u32>()],
+            // Setting every score to worst makes the first "new" machine immediately overwrites the initial "old" machine
+            contents: &vec![0xFFu8; TOTAL_MACHINES * 4 * size_of::<u32>()],
             usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
         });
 
         let temp_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("temp"),
-            size: (size_of::<u32>() * 32 * structs::U32_MAX_PER_STAGE * structs::U32_PER_STAGE.len() *std::cmp::max(machines.len(), stimuli_amount)) as u64,
+            size: std::cmp::max(std::cmp::max(output_vs_golden_buff.size(), output_buffer.size()), sources_new_buffer.size()) as u64,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -323,19 +323,19 @@ impl GpuRuntime {
 
     pub async fn run(&mut self) -> anyhow::Result<()> {
         let batch_stimuli_size : usize = STIMULI_PER_DISPATCH as usize;
-        let num_dispatches = self.machines.len().div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
+        let num_dispatches = TOTAL_MACHINES.div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
         // TODO Change from deterministic to truly random once testing finishes
         let s : [u32; 8]= [0xABAF_4321, 0xdeadbeef, 0x4978_2348, 0x7cbd_46da,
                             0x4321_4329, 0xA67b_d8d4, 0x2242_a421,0x25bc_762c];
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
-        const TOTAL_SIMS : u32 = 2;
+        const TOTAL_SIMS : u32 = 32;
         const MAX_PER_ENCODER : u32 = 32;
         // T defines how much delta is tolerated at total. If the delta is X, the chances of
         // the chances of acceptance are 2^(-X/T)
         // Ideally we want to define that at the beginning, if every bit is wrong, there is an acceptance rate of 1/2
         // Thus,  2^(-X/T_0) == 0.5 -> T_0 = MAX_ERRORS
         // The temperature should decrease too with each repetion. Algorithm can be linear
-        const START_TEMP : f32 = structs::FF_PER_STAGE[structs::FF_PER_STAGE.len() - 1] as f32;
+        const START_TEMP : f32 = PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] as f32;
         {
             for kappa in 0..TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) {
                 let (tx, rx) = bounded(1);
@@ -379,7 +379,6 @@ impl GpuRuntime {
                         pass.dispatch_workgroups(num_dispatches, 1, 1);
                     }
                 }
-
                 self.queue.submit([encoder.finish()]);
                 self.device.poll(wgpu::PollType::wait_indefinitely())?;
                 log::info!("Iteration group {}/{}", kappa + 1, TOTAL_SIMS.div_ceil(MAX_PER_ENCODER));
@@ -402,11 +401,10 @@ impl GpuRuntime {
         let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_new).await?;
         let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
         
-        let machine_sources : &[[[u32; structs::U32_MAX_PER_STAGE * 32]; structs::U32_PER_STAGE.len() - 1]]
-            = bytemuck::cast_slice(&machine_sources_raw);
-        let machine_bitfiddle : &[[[[u32; 4]; structs::U32_MAX_PER_STAGE]; structs::U32_PER_STAGE.len() - 1]]
-            = bytemuck::cast_slice(&machine_bitfiddle_raw);
-        let output_vs_golden : &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_raw);
+        self.machines.sources = bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw).try_into().unwrap();
+        self.machines.bitfiddle = bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw).try_into().unwrap();
+
+        let output_vs_golden : &[[u32; 4]; TOTAL_MACHINES] = bytemuck::cast_slice(&output_vs_golden_raw).try_into().unwrap();
 
         let mut best_machine = 0;
         for i in 0..output_vs_golden.len() {
@@ -415,25 +413,13 @@ impl GpuRuntime {
             }
         }
 
-        for i in 0..self.machines.len() {
-            let m = &mut self.machines[i];
-            for j in 1..structs::U32_PER_STAGE.len() {
-                for k in 0..structs::U32_MAX_PER_STAGE * 32 {
-                    m.comb[j].sources[k] =
-                        (machine_sources[i][j - 1][k] as u16,
-                        (machine_sources[i][j - 1][k] >> 16) as u16);
-                }
-                m.comb[j].bitfiddle_constants = machine_bitfiddle[i][j - 1];
-            }
-        }
-
         let selected_machine = best_machine;
 
-        let machine_sv = self.machines[selected_machine].to_sv("test_gen_rom");
+        let machine_sv = self.machines.to_sv(selected_machine, "test_gen_rom");
         fs::write("../../src/generated/test_gen_rom.sv", machine_sv)?;
 
-        let size_of_one = self.stimuli_amount * structs::U32_PER_STAGE[structs::U32_PER_STAGE.len() - 1] * size_of::<u32>();
-        
+        let size_of_one = self.stimuli_amount * structs::U32_PER_OUTPUT * size_of::<u32>();
+        log::info!("Size of output: {}", size_of_one);
         fs::write("../../verilator/output-rs.bin", &output_data[selected_machine*size_of_one..(selected_machine + 1) * size_of_one])?;
 
         Ok(())
