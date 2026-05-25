@@ -11,26 +11,38 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 const WORKERS : [u32; 3] = [4, 4, 2];
-const STIMULI_TRIMMER : usize = 256; // For testing only to reduce runtime size
-const STIMULI_PER_DISPATCH : u32 = 32;
+const STIMULI_TRIMMER : usize = 1024 * 30; // For testing only to reduce runtime size
+const STIMULI_PER_DISPATCH : u32 = 64;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
+    log::info!("Starting...");
     write_stims()?;
+    log::info!("Wrote stims");
     let machines = Machines::new();
-
     const PADDING_STIMS : usize = PREVIOUS_STAGE_FF.len() - 2;
 
     let mut stimuli_u8 : Vec<u8> = fs::read("../../verilator/stimuli/ram_init.bin")?;
-    
+
     let mut golden_file : Vec<u8> = fs::read("../../verilator/stimuli/test1.data")?;
-    golden_file.drain((4 * STIMULI_TRIMMER)..);
+    if golden_file.len() >= (4 * STIMULI_TRIMMER) {
+        golden_file.drain((4 * STIMULI_TRIMMER)..);
+    } else {
+        log::info!("Golden file not trimmed!");
+    }
+
+    // TODO this only works if U32_PER_OUTPUT is the same as U32_PER_STIMULI
+    if stimuli_u8.len() > golden_file.len() {
+        stimuli_u8.drain(golden_file.len()..);
+    }
 
     let mut golden = vec![0u8; size_of::<u32>() * U32_PER_OUTPUT * PADDING_STIMS];
     golden.extend(&golden_file);
 
     stimuli_u8.extend([0u8; size_of::<u32>() * U32_PER_STIMULI * PADDING_STIMS]);
+
+    log::info!("Stimuli/Golden len: {}, {}", golden_file.len(), golden_file.len());
     let mut now = std::time::Instant::now();
     let mut gpu = GpuRuntime::new(machines, &stimuli_u8, &golden).await?;
     log::info!("Creation: {}ms", now.elapsed().as_millis());now = std::time::Instant::now();
@@ -43,7 +55,7 @@ pub async fn main() -> anyhow::Result<()> {
 }
 
 pub fn write_stims() -> anyhow::Result<()> {
-    let mut v : Vec<u8> = vec![];
+    let mut v : Vec<u8> = Vec::with_capacity(STIMULI_TRIMMER);
     for i in 0..(STIMULI_TRIMMER as u32) {
         v.extend(u32::to_le_bytes(i));
     }
@@ -87,6 +99,8 @@ impl GpuRuntime {
         assert_eq!(golden.len() / (size_of::<u32>() * U32_PER_STIMULI),
                 stimuli_u8.len() / (size_of::<u32>() * U32_PER_OUTPUT));
         let stimuli_amount = stimuli_u8.len() / (size_of::<u32>() * U32_PER_STIMULI);
+        
+        log::info!("Stimuli amount: {stimuli_amount}");
 
         let instance = wgpu::Instance::default();
         let adapter = instance
@@ -201,7 +215,7 @@ impl GpuRuntime {
         
         let machine_state_q_buff = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("machine_state_q"),
-            size: (structs::TOTAL_MACHINES * U32_NEEDED_FOR_FF * size_of::<u32>()) as u64,
+            size: (TOTAL_MACHINES * U32_NEEDED_FOR_FF * size_of::<u32>()) as u64,
             usage: wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
@@ -295,7 +309,6 @@ impl GpuRuntime {
                 },
             ],
         });
-
         Ok(GpuRuntime {
             machines,
             stimuli_amount,
@@ -328,8 +341,8 @@ impl GpuRuntime {
         let s : [u32; 8]= [0xABAF_4321, 0xdeadbeef, 0x4978_2348, 0x7cbd_46da,
                             0x4321_4329, 0xA67b_d8d4, 0x2242_a421,0x25bc_762c];
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
-        const TOTAL_SIMS : u32 = 32;
-        const MAX_PER_ENCODER : u32 = 32;
+        const TOTAL_SIMS : u32 = 2048;
+        const MAX_PER_ENCODER : u32 = 1;
         // T defines how much delta is tolerated at total. If the delta is X, the chances of
         // the chances of acceptance are 2^(-X/T)
         // Ideally we want to define that at the beginning, if every bit is wrong, there is an acceptance rate of 1/2
