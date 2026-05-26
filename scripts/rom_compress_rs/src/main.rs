@@ -11,7 +11,7 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 const WORKERS : [u32; 3] = [4, 4, 2];
-const STIMULI_TRIMMER : usize = 1024 * 30; // For testing only to reduce runtime size
+const STIMULI_TRIMMER : usize = 1024 * 60; // For testing only to reduce runtime size
 const STIMULI_PER_DISPATCH : u32 = 64;
 
 #[tokio::main]
@@ -20,7 +20,7 @@ pub async fn main() -> anyhow::Result<()> {
     log::info!("Starting...");
     write_stims()?;
     log::info!("Wrote stims");
-    let machines = Machines::new();
+    let machines = Box::new(Machines::new());
     const PADDING_STIMS : usize = PREVIOUS_STAGE_FF.len() - 2;
 
     let mut stimuli_u8 : Vec<u8> = fs::read("../../verilator/stimuli/ram_init.bin")?;
@@ -78,7 +78,7 @@ struct GpuBuffers {
 }
 
 struct GpuRuntime {
-    machines: Machines,
+    machines: Box<Machines>,
     stimuli_amount: usize,
     instance: wgpu::Instance,
     adapter: wgpu::Adapter,
@@ -90,7 +90,7 @@ struct GpuRuntime {
 }
 
 impl GpuRuntime {
-    pub async fn new(machines: Machines,
+    pub async fn new(machines: Box<Machines>,
         stimuli_u8: &[u8],
         golden: &[u8]) -> anyhow::Result<GpuRuntime> {
         
@@ -110,7 +110,7 @@ impl GpuRuntime {
         let mut device_descriptor : wgpu::DeviceDescriptor = Default::default();
         // TODO hmmmmmmmmmmmmmmmm 1GiB limit for buffer?
         device_descriptor.required_limits.max_storage_buffer_binding_size = 1024 * 1024 * 1024;
-        device_descriptor.required_limits.max_buffer_size = 1024 * 1024 * 1024;
+        device_descriptor.required_limits.max_buffer_size = 1024 * 1024 * 1024 * 2;
         device_descriptor.required_limits.max_immediate_size = 128;
         device_descriptor.required_limits.max_storage_buffers_per_shader_stage = 16;
         device_descriptor.required_features |= wgpu::Features::IMMEDIATES;
@@ -203,13 +203,13 @@ impl GpuRuntime {
         let sources_old_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("sources old"),
             size: sources_new_buffer.size(),
-            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
         let bitfiddle_old_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("bitfiddle old"),
             size: bitfiddle_new_buffer.size(),
-            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
         
@@ -253,7 +253,7 @@ impl GpuRuntime {
             // We can safely assume that the very first "old" machine produces bogus
             // Setting every score to worst makes the first "new" machine immediately overwrites the initial "old" machine
             contents: &vec![0xFFu8; TOTAL_MACHINES * 4 * size_of::<u32>()],
-            usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE,
         });
 
         let temp_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -341,8 +341,9 @@ impl GpuRuntime {
         let s : [u32; 8]= [0xABAF_4321, 0xdeadbeef, 0x4978_2348, 0x7cbd_46da,
                             0x4321_4329, 0xA67b_d8d4, 0x2242_a421,0x25bc_762c];
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
-        const TOTAL_SIMS : u32 = 2048;
-        const MAX_PER_ENCODER : u32 = 1;
+        const TOTAL_SIMS : u32 = 256;
+        const MAX_PER_ENCODER : u32 = 4;
+        const RESHUFFLE_PERIOD : u32 = 16;
         // T defines how much delta is tolerated at total. If the delta is X, the chances of
         // the chances of acceptance are 2^(-X/T)
         // Ideally we want to define that at the beginning, if every bit is wrong, there is an acceptance rate of 1/2
@@ -399,10 +400,52 @@ impl GpuRuntime {
                 let output_vs_golden_u8 = self.read_buffer(&self.buffers.output_vs_golden).await?;
                 let output_vs_golden : &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_u8);
                 for omega in output_vs_golden {
-                    log::info!("{}, {}, {}, {}", omega[0], omega[1],omega[2],omega[3]);
+                    // log::info!("{}, {}, {}, {}", omega[0], omega[1],omega[2],omega[3]);
+                }
+                if kappa != 0 && kappa % RESHUFFLE_PERIOD == 0 {
+                    self.reshuffle_machines().await?;
+                    log::info!("Reshuffled machines");
                 }
             }
         }
+
+        Ok(())
+    }
+
+    pub async fn reshuffle_machines(&mut self) -> anyhow::Result<()> {
+        let machine_sources_raw  : Vec<u8> = self.read_buffer(&self.buffers.sources_old).await?;
+        let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_old).await?;
+        let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
+        
+        let machine_sources = bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw);
+        let machine_bitfiddle = bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw);
+        let output_vs_golden : &[[u32; 4]; TOTAL_MACHINES] = bytemuck::cast_slice(&output_vs_golden_raw).try_into().unwrap();
+        let mut sorted_scores : Vec<_> = output_vs_golden.iter()
+            .zip(0..output_vs_golden.len())
+            .collect();
+        sorted_scores.sort_unstable_by(|k1,k2| {
+            k1.0[0].cmp(&k2.0[0])
+        });
+        for k in sorted_scores.iter() {
+            log::info!("{:?}", k.0);
+        }
+        for i in 0..TOTAL_MACHINES/2 {
+            sorted_scores[TOTAL_MACHINES - 1 - i] = sorted_scores[i];
+        }
+
+        for i in 0..machine_sources.len() {
+            self.machines.sources[i] = machine_sources[sorted_scores[i].1];
+            self.machines.bitfiddle[i] = machine_bitfiddle[sorted_scores[i].1];
+        }
+
+        // self.machines.sources = bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw).try_into().unwrap();
+        // self.machines.bitfiddle = bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw).try_into().unwrap();
+
+        self.write_buffer(&self.buffers.sources_old, bytemuck::cast_slice(&self.machines.sources)).await?;
+        self.write_buffer(&self.buffers.bitfiddle_old, bytemuck::cast_slice(&self.machines.bitfiddle)).await?;
+        
+        let scores_only : Vec<[u32; 4]> = sorted_scores.iter().map(|k| *k.0).collect();
+        self.write_buffer(&self.buffers.output_vs_golden, bytemuck::cast_slice(&scores_only)).await?;
 
         Ok(())
     }
@@ -435,6 +478,19 @@ impl GpuRuntime {
         log::info!("Size of output: {}", size_of_one);
         fs::write("../../verilator/output-rs.bin", &output_data[selected_machine*size_of_one..(selected_machine + 1) * size_of_one])?;
 
+        Ok(())
+    }
+
+    pub async fn write_buffer(&self, buff: &wgpu::Buffer, data: &[u8]) -> anyhow::Result<()> {
+        self.queue.write_buffer(&buff, 0, &data);
+        let (tx, rx) = bounded(1);
+        self.queue.on_submitted_work_done(move || {
+            if let Err(e) = tx.send(0u32) {
+                log::error!("Error while sending {:?}", e);
+            }
+        });
+        self.queue.submit([]);
+        rx.recv_async().await?;
         Ok(())
     }
 
