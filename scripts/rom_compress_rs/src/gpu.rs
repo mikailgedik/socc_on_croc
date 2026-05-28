@@ -11,6 +11,7 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
 const WORKERS: [u32; 3] = [4, 4, 2];
+const NUM_DISPATCHES : u32 = TOTAL_MACHINES.div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
 const STIMULI_PER_DISPATCH: u32 = 64;
 
 const BEST_MACHINE_SV_FILE: &str = "../../src/generated/test_gen_rom.sv";
@@ -310,9 +311,6 @@ impl GpuRuntime {
     }
 
     pub async fn run(&mut self) -> anyhow::Result<()> {
-        let batch_stimuli_size: usize = STIMULI_PER_DISPATCH as usize;
-        let num_dispatches =
-            TOTAL_MACHINES.div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
         // TODO Change from deterministic to truly random once testing finishes
         let s: [u32; 8] = [
             0xABAF_4321,
@@ -359,31 +357,11 @@ impl GpuRuntime {
                         } else {
                             1.0f32
                         })) as u32;
-                    {
-                        let mut pass = encoder.begin_compute_pass(&Default::default());
-                        pass.set_pipeline(&self.pipeline);
-                        let immediates: [u32; 4] = [
-                            2u32,                 // Mode == randomize
-                            randomization_chance, // Change of mutation (0x0 - 0xFFFF)
-                            rng.next_u32(),       // Random seed
-                            u32::from_le_bytes(temperature.to_le_bytes()),
-                        ];
-                        pass.set_immediates(0, bytemuck::cast_slice(&immediates));
-                        pass.set_bind_group(0, &self.bind_group, &[]);
-                        pass.dispatch_workgroups(num_dispatches, 1, 1);
-                    }
+                    
+                    self.compute_pass_compare_or_create_new(&mut encoder, Some((randomization_chance, temperature)),true,rng.next_u32());
 
-                    for i in 0..(self.stimuli_amount.div_ceil(batch_stimuli_size)) {
-                        let mut pass = encoder.begin_compute_pass(&Default::default());
-                        pass.set_pipeline(&self.pipeline);
-                        let immediates: [u32; 3] = [
-                            1u32, // Mode == calculate
-                            (i as u32 * STIMULI_PER_DISPATCH),
-                            0u32, // Random seed
-                        ];
-                        pass.set_immediates(0, bytemuck::cast_slice(&immediates));
-                        pass.set_bind_group(0, &self.bind_group, &[]);
-                        pass.dispatch_workgroups(num_dispatches, 1, 1);
+                    for i in 0..(self.stimuli_amount.div_ceil(STIMULI_PER_DISPATCH as usize)) {
+                        self.compute_pass_run(&mut encoder, (i as u32) * STIMULI_PER_DISPATCH);
                     }
                 }
                 self.queue.submit([encoder.finish()]);
@@ -410,6 +388,49 @@ impl GpuRuntime {
         }
 
         Ok(())
+    }
+
+    pub fn read_current_status() {
+
+    }
+
+    pub fn compute_pass_run(&self, encoder: &mut wgpu::CommandEncoder, stimuli_start: u32) {
+        let mut pass = encoder.begin_compute_pass(&Default::default());
+        pass.set_pipeline(&self.pipeline);
+        let immediates: [u32; 4] = [
+            1u32, // Mode == calculate
+            stimuli_start,
+            0u32,
+            0u32
+        ];
+        pass.set_immediates(0, bytemuck::cast_slice(&immediates));
+        pass.set_bind_group(0, &self.bind_group, &[]);
+        pass.dispatch_workgroups(NUM_DISPATCHES, 1, 1);
+    }
+
+    /// randomization_chance_temp: randomization chance has to be between 0x0 and 0xFFFF
+    pub fn compute_pass_compare_or_create_new(
+        &self, encoder: &mut wgpu::CommandEncoder,
+        randomization_chance_temp: Option<(u32, f32)>,
+        create_new_machine: bool,
+        seed: u32) {
+        let mode : u32 = match (randomization_chance_temp, create_new_machine) {
+            (Some(_), false) => 2,
+            (None, true) => 3,
+            (Some(_), true) => 4,
+            (None, false) => panic!("What should this even mean?")
+        };
+        let mut pass = encoder.begin_compute_pass(&Default::default());
+        pass.set_pipeline(&self.pipeline);
+        let immediates: [u32; 4] = [
+            mode,
+            seed,
+            u32::from_le_bytes(randomization_chance_temp.unwrap_or((0u32,0f32)).1.to_le_bytes()),
+            randomization_chance_temp.unwrap_or((0u32,0f32)).0,
+        ];
+        pass.set_immediates(0, bytemuck::cast_slice(&immediates));
+        pass.set_bind_group(0, &self.bind_group, &[]);
+        pass.dispatch_workgroups(NUM_DISPATCHES, 1, 1);
     }
 
     pub async fn reshuffle_machines(&mut self) -> anyhow::Result<()> {
@@ -441,9 +462,6 @@ impl GpuRuntime {
             self.machines.sources[i] = machine_sources[sorted_scores[i].1];
             self.machines.bitfiddle[i] = machine_bitfiddle[sorted_scores[i].1];
         }
-
-        // self.machines.sources = bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw).try_into().unwrap();
-        // self.machines.bitfiddle = bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw).try_into().unwrap();
 
         self.write_buffer(
             &self.buffers.sources_old,

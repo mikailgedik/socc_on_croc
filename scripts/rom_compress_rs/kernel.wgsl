@@ -24,9 +24,9 @@ override workers_z : u32 = 1;
 
 struct Immediates {
     mode: u32,
-    start_stimuli: u32,
-    seed1: u32,
-    temperature_bits: u32
+    arg1: u32,
+    arg2: u32,
+    arg3: u32
 };
 var<immediate> immediates: Immediates;
 
@@ -86,8 +86,8 @@ fn calculate_next_state(
     }
 }
 
-fn run_new_machine(machine: u32) {
-    if(immediates.start_stimuli == 0) {
+fn run_new_machine(machine: u32, start_stimuli: u32) {
+    if(start_stimuli == 0) {
         output_vs_golden[machine][1] = 0;
         
         for(var i : u32 = 0; i < U32_NEEDED_FOR_FF; i++) {
@@ -97,7 +97,7 @@ fn run_new_machine(machine: u32) {
     }
 
     for(var i : u32 = 0; i < STIMULI_PER_DISPATCH; i++) {
-        let stimuli_idx = immediates.start_stimuli + i;
+        let stimuli_idx = start_stimuli + i;
         if (stimuli_idx < STIMULI_LENGTH) {
             calculate_next_state(machine,stimuli_idx);
             
@@ -134,12 +134,11 @@ fn run_new_machine(machine: u32) {
     }
 }
 
-fn replace_old_machine_if_new_is_better(machine: u32, rng: ptr<function, XorWowState>) {
+fn replace_old_machine_if_new_is_better(machine: u32, temp: f32 ,rng: ptr<function, XorWowState>) {
     // After running, compare with the old machine
     var new_machine_better = output_vs_golden[machine][1] < output_vs_golden[machine][0];
     var overridden = false;
     if (!new_machine_better && output_vs_golden[machine][0] != 0) {
-        let temp : f32 = bitcast<f32>(immediates.temperature_bits);
         if (temp > 0.000001) {
             let delta = f32(output_vs_golden[machine][0]) - f32(output_vs_golden[machine][1]);
             let exponent = delta / temp;
@@ -162,7 +161,7 @@ fn replace_old_machine_if_new_is_better(machine: u32, rng: ptr<function, XorWowS
     }
 }
 
-fn create_new_machine(machine: u32, rng: ptr<function, XorWowState>) {
+fn create_new_machine(machine: u32, mutation_chance: u32, rng: ptr<function, XorWowState>) {
     if(output_vs_golden[machine][0] == 0) {
         return; // Working machine found - stop
     }
@@ -197,7 +196,7 @@ fn create_new_machine(machine: u32, rng: ptr<function, XorWowState>) {
 
             var src : u32 = sources_old[machine][current_bit];
             var rand_val : u32 = random_xorwow(rng);
-            if((rand_val & 0xFFFF) < immediates.start_stimuli) {
+            if((rand_val & 0xFFFF) < mutation_chance) {
                 fiddlers[0] ^= ((rand_val >> 16) & 1) << b;
                 fiddlers[1] ^= ((rand_val >> 17) & 1) << b;
                 fiddlers[2] ^= ((rand_val >> 18) & 1) << b;
@@ -248,27 +247,24 @@ fn main(
         //NOP i guess? TODO?
         // Placeholder for now
     } else if(immediates.mode == 1) {
-        run_new_machine(machine);
-    } else if(immediates.mode == 2) {
-        var rng: XorWowState = XorWowState(array<u32, 5>(immediates.seed1 ^ machine, 0xdeadbeef, 0x78a8fda8, immediates.seed1 + machine, immediates.seed1 & machine),
-            (immediates.seed1 << 3) + machine
+        let start_stimuli = immediates.arg1;
+        run_new_machine(machine, start_stimuli);
+    } else if(immediates.mode >= 2 && immediates.mode <= 4) {
+        let seed = immediates.arg1;
+        let temp: f32 = bitcast<f32>(immediates.arg2);
+        let mutation_chance = immediates.arg3;
+        var rng: XorWowState = XorWowState(array<u32, 5>(seed ^ machine, 0xdeadbeef, 0x78a8fda8, seed + machine, seed & machine),
+            (seed << 3) + machine
         );
         for(var i = 0; i < 32; i++) {
             random_xorwow(&rng);
         }
         
-        replace_old_machine_if_new_is_better(machine, &rng);
-
-        create_new_machine(machine, &rng);     
-    } else if(immediates.mode == 1024) {
-        var rng: XorWowState = XorWowState(array<u32, 5>(immediates.seed1 ^ machine, 0xdeadbeef, 0x78a8fda8, immediates.seed1 + machine, immediates.seed1 & machine),
-            (immediates.seed1 << 3) + machine
-        );
-        for(var i = 0; i < 32; i++) {
-            random_xorwow(&rng);
+        if(immediates.mode == 2 || immediates.mode == 4) {
+            replace_old_machine_if_new_is_better(machine, temp, &rng);
         }
-        for(var i : u32 = 0; i < STIMULI_LENGTH; i++) {
-            output[machine][i][0] = random_xorwow(&rng);
+        if(immediates.mode == 3 || immediates.mode == 4) {
+            create_new_machine(machine, mutation_chance, &rng);
         }
     }
 }
