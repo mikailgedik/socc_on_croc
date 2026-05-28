@@ -11,7 +11,7 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 const WORKERS : [u32; 3] = [4, 4, 2];
-const STIMULI_TRIMMER : usize = 1024 * 60; // For testing only to reduce runtime size
+const STIMULI_TRIMMER : usize = 1024 * 4; // For testing only to reduce runtime size
 const STIMULI_PER_DISPATCH : u32 = 64;
 
 #[tokio::main]
@@ -25,7 +25,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     let mut stimuli_u8 : Vec<u8> = fs::read("../../verilator/stimuli/ram_init.bin")?;
 
-    let mut golden_file : Vec<u8> = fs::read("../../verilator/stimuli/test1.data")?;
+    let mut golden_file : Vec<u8> = fs::read("../../verilator/stimuli/font8bit.data")?;
     if golden_file.len() >= (4 * STIMULI_TRIMMER) {
         golden_file.drain((4 * STIMULI_TRIMMER)..);
     } else {
@@ -110,7 +110,7 @@ impl GpuRuntime {
         let mut device_descriptor : wgpu::DeviceDescriptor = Default::default();
         // TODO hmmmmmmmmmmmmmmmm 1GiB limit for buffer?
         device_descriptor.required_limits.max_storage_buffer_binding_size = 1024 * 1024 * 1024;
-        device_descriptor.required_limits.max_buffer_size = 1024 * 1024 * 1024 * 2;
+        device_descriptor.required_limits.max_buffer_size = 1024 * 1024 * 1024;
         device_descriptor.required_limits.max_immediate_size = 128;
         device_descriptor.required_limits.max_storage_buffers_per_shader_stage = 16;
         device_descriptor.required_features |= wgpu::Features::IMMEDIATES;
@@ -341,7 +341,7 @@ impl GpuRuntime {
         let s : [u32; 8]= [0xABAF_4321, 0xdeadbeef, 0x4978_2348, 0x7cbd_46da,
                             0x4321_4329, 0xA67b_d8d4, 0x2242_a421,0x25bc_762c];
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
-        const TOTAL_SIMS : u32 = 256;
+        const TOTAL_SIMS : u32 = 4096 * 2;
         const MAX_PER_ENCODER : u32 = 4;
         const RESHUFFLE_PERIOD : u32 = 16;
         // T defines how much delta is tolerated at total. If the delta is X, the chances of
@@ -351,6 +351,7 @@ impl GpuRuntime {
         // The temperature should decrease too with each repetion. Algorithm can be linear
         const START_TEMP : f32 = PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] as f32;
         {
+            let start_time = std::time::Instant::now();
             for kappa in 0..TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) {
                 let (tx, rx) = bounded(1);
                 self.queue.on_submitted_work_done(move || {
@@ -395,13 +396,10 @@ impl GpuRuntime {
                 }
                 self.queue.submit([encoder.finish()]);
                 self.device.poll(wgpu::PollType::wait_indefinitely())?;
-                log::info!("Iteration group {}/{}", kappa + 1, TOTAL_SIMS.div_ceil(MAX_PER_ENCODER));
+                let total_time_extrapolated : u128 = start_time.elapsed().as_millis() * (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128) / (kappa as u128 + 1);
+                log::info!("Iteration group {}/{}. Left: {}min", kappa + 1, TOTAL_SIMS.div_ceil(MAX_PER_ENCODER), (total_time_extrapolated - total_time_extrapolated * (kappa as u128 + 1) / (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128)) / (60 * 1000));
                 rx.recv_async().await?;
-                let output_vs_golden_u8 = self.read_buffer(&self.buffers.output_vs_golden).await?;
-                let output_vs_golden : &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_u8);
-                for omega in output_vs_golden {
-                    // log::info!("{}, {}, {}, {}", omega[0], omega[1],omega[2],omega[3]);
-                }
+                
                 if kappa != 0 && kappa % RESHUFFLE_PERIOD == 0 {
                     self.reshuffle_machines().await?;
                     log::info!("Reshuffled machines");

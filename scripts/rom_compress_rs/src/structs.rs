@@ -24,13 +24,13 @@ macro_rules! decl_consts {
 }
 
 // First entry is the size of the input!
-const _INTERNAL_CONSTANTS : (usize, &[usize]) = decl_consts!(32,256,256,256,32);
+const _INTERNAL_CONSTANTS : (usize, &[usize]) = decl_consts!(10,64,128,128,128,128,128,128,128,128,256,8);
 
 pub const TOTAL_FF : usize = _INTERNAL_CONSTANTS.0;
 pub const U32_NEEDED_FOR_FF : usize = (TOTAL_FF + 31) / 32;
 pub const PREVIOUS_STAGE_FF : &[usize] = _INTERNAL_CONSTANTS.1;
 pub const OUTPUT_START: usize = TOTAL_FF - PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1];
-pub const TOTAL_MACHINES : usize = 4096;
+pub const TOTAL_MACHINES : usize = 3584 * 2;
 pub const U32_PER_STIMULI : usize= (PREVIOUS_STAGE_FF[0] + 31) / 32;
 pub const U32_PER_OUTPUT : usize= (PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] + 31) / 32;
 
