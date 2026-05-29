@@ -1,6 +1,6 @@
 use crate::structs::{
-    Machines, OUTPUT_START, PREVIOUS_STAGE_FF, TOTAL_FF, TOTAL_MACHINES, U32_NEEDED_FOR_FF,
-    U32_PER_OUTPUT, U32_PER_STIMULI,
+    Machines, OUTPUT_START, PADDING_STIMS, PREVIOUS_STAGE_FF, TOTAL_FF, TOTAL_MACHINES,
+    U32_NEEDED_FOR_FF, U32_PER_OUTPUT, U32_PER_STIMULI,
 };
 use anyhow;
 use flume::bounded;
@@ -11,7 +11,8 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
 const WORKERS: [u32; 3] = [4, 4, 2];
-const NUM_DISPATCHES : u32 = TOTAL_MACHINES.div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
+const NUM_DISPATCHES: u32 =
+    TOTAL_MACHINES.div_ceil((WORKERS[0] * WORKERS[1] * WORKERS[2]) as usize) as u32;
 const STIMULI_PER_DISPATCH: u32 = 64;
 
 const BEST_MACHINE_SV_FILE: &str = "../../src/generated/test_gen_rom.sv";
@@ -221,9 +222,7 @@ impl GpuRuntime {
 
         let output_vs_golden_buff = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("output vs golden"),
-            // We can safely assume that the very first "old" machine produces bogus
-            // Setting every score to worst makes the first "new" machine immediately overwrites the initial "old" machine
-            contents: &vec![0xFFu8; TOTAL_MACHINES * 4 * size_of::<u32>()],
+            contents: bytemuck::cast_slice(&machines.score),
             usage: wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC
                 | wgpu::BufferUsages::STORAGE,
@@ -325,73 +324,73 @@ impl GpuRuntime {
         let mut rng = StdRng::from_seed(bytemuck::cast_slice(&s).try_into().unwrap());
         const TOTAL_SIMS: u32 = 4096 * 2;
         const MAX_PER_ENCODER: u32 = 4;
-        const RESHUFFLE_PERIOD: u32 = 16;
+        const RESHUFFLE_PERIOD: u32 = 4;
         // T defines how much delta is tolerated at total. If the delta is X, the chances of
         // the chances of acceptance are 2^(-X/T)
         // Ideally we want to define that at the beginning, if every bit is wrong, there is an acceptance rate of 1/2
         // Thus,  2^(-X/T_0) == 0.5 -> T_0 = MAX_ERRORS
         // The temperature should decrease too with each repetion. Algorithm can be linear
         const START_TEMP: f32 = PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] as f32;
-        {
-            let start_time = std::time::Instant::now();
-            for kappa in 0..TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) {
-                let (tx, rx) = bounded(1);
-                self.queue.on_submitted_work_done(move || {
-                    if let Err(e) = tx.send(0u32) {
-                        log::error!("Error while sending {:?}", e);
-                    }
-                });
 
-                let mut encoder = self.device.create_command_encoder(&Default::default());
+        let start_time = std::time::Instant::now();
+        for kappa in 0..TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) {
+            let mut encoder = self.device.create_command_encoder(&Default::default());
 
-                for simulation_iter in (kappa * MAX_PER_ENCODER)
-                    ..std::cmp::min((kappa + 1) * MAX_PER_ENCODER, TOTAL_SIMS)
-                {
-                    let iterations_left_normalized: f32 =
-                        1.0 - (simulation_iter + 1) as f32 / (TOTAL_SIMS as f32);
-                    let temperature: f32 = START_TEMP * iterations_left_normalized;
-                    // TODO decrease this with time?
-                    let randomization_chance = (0xFFFF as f32
-                        * (if simulation_iter != 0 {
-                            0.05f32
-                        } else {
-                            1.0f32
-                        })) as u32;
-                    
-                    self.compute_pass_compare_or_create_new(&mut encoder, Some((randomization_chance, temperature)),true,rng.next_u32());
-
-                    for i in 0..(self.stimuli_amount.div_ceil(STIMULI_PER_DISPATCH as usize)) {
-                        self.compute_pass_run(&mut encoder, (i as u32) * STIMULI_PER_DISPATCH);
-                    }
-                }
-                self.queue.submit([encoder.finish()]);
-                self.device.poll(wgpu::PollType::wait_indefinitely())?;
-                let total_time_extrapolated: u128 = start_time.elapsed().as_millis()
-                    * (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128)
-                    / (kappa as u128 + 1);
-                log::info!(
-                    "Iteration group {}/{}. Left: {}min",
-                    kappa + 1,
-                    TOTAL_SIMS.div_ceil(MAX_PER_ENCODER),
-                    (total_time_extrapolated
-                        - total_time_extrapolated * (kappa as u128 + 1)
-                            / (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128))
-                        / (60 * 1000)
+            for simulation_iter in
+                (kappa * MAX_PER_ENCODER)..std::cmp::min((kappa + 1) * MAX_PER_ENCODER, TOTAL_SIMS)
+            {
+                let iterations_left_normalized: f32 =
+                    1.0 - (simulation_iter + 1) as f32 / (TOTAL_SIMS as f32);
+                let temperature: f32 = START_TEMP * iterations_left_normalized;
+                // TODO decrease this with time?
+                let randomization_chance = (0xFFFF as f32
+                    * (if simulation_iter != 0 {
+                        0.05f32
+                    } else {
+                        1.0f32
+                    })) as u32;
+                self.compute_pass_compare_or_create_new(
+                    &mut encoder,
+                    if simulation_iter != 0 { Some(temperature) } else { None },
+                    Some(randomization_chance),
+                    rng.next_u32(),
                 );
-                rx.recv_async().await?;
 
-                if kappa != 0 && kappa % RESHUFFLE_PERIOD == 0 {
-                    self.reshuffle_machines().await?;
-                    log::info!("Reshuffled machines");
+                for i in 0..(self.stimuli_amount.div_ceil(STIMULI_PER_DISPATCH as usize)) {
+                    self.compute_pass_run(&mut encoder, (i as u32) * STIMULI_PER_DISPATCH);
                 }
+            }
+            self.queue.submit([encoder.finish()]);
+
+            let (tx, rx) = bounded(1);
+            self.queue.on_submitted_work_done(move || {
+                if let Err(e) = tx.send(0u32) {
+                    log::error!("Error while sending {:?}", e);
+                }
+            });
+            log::info!("Waiting...");
+            self.device.poll(wgpu::PollType::wait_indefinitely())?;
+            let total_time_extrapolated: u128 = start_time.elapsed().as_millis()
+                * (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128)
+                / (kappa as u128 + 1);
+            log::info!(
+                "Iteration group {}/{}. Left: {}min",
+                kappa + 1,
+                TOTAL_SIMS.div_ceil(MAX_PER_ENCODER),
+                (total_time_extrapolated
+                    - total_time_extrapolated * (kappa as u128 + 1)
+                        / (TOTAL_SIMS.div_ceil(MAX_PER_ENCODER) as u128))
+                    / (60 * 1000)
+            );
+            rx.recv_async().await?;
+
+            if kappa != 0 && kappa % RESHUFFLE_PERIOD == 0 {
+                self.reshuffle_machines().await?;
+                log::info!("Reshuffled machines");
             }
         }
 
         Ok(())
-    }
-
-    pub fn read_current_status() {
-
     }
 
     pub fn compute_pass_run(&self, encoder: &mut wgpu::CommandEncoder, stimuli_start: u32) {
@@ -401,7 +400,7 @@ impl GpuRuntime {
             1u32, // Mode == calculate
             stimuli_start,
             0u32,
-            0u32
+            0u32,
         ];
         pass.set_immediates(0, bytemuck::cast_slice(&immediates));
         pass.set_bind_group(0, &self.bind_group, &[]);
@@ -410,23 +409,27 @@ impl GpuRuntime {
 
     /// randomization_chance_temp: randomization chance has to be between 0x0 and 0xFFFF
     pub fn compute_pass_compare_or_create_new(
-        &self, encoder: &mut wgpu::CommandEncoder,
-        randomization_chance_temp: Option<(u32, f32)>,
-        create_new_machine: bool,
-        seed: u32) {
-        let mode : u32 = match (randomization_chance_temp, create_new_machine) {
-            (Some(_), false) => 2,
-            (None, true) => 3,
-            (Some(_), true) => 4,
-            (None, false) => panic!("What should this even mean?")
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        replace_old_machine_if_better_temp: Option<f32>,
+        randomization_chance: Option<u32>,
+        seed: u32,
+    ) {
+        let mode: u32 = match (replace_old_machine_if_better_temp, randomization_chance) {
+            (Some(_), None) => 2,
+            (None, Some(_)) => 3,
+            (Some(_), Some(_)) => 4,
+            (None, None) => panic!("What should this even mean?"),
         };
         let mut pass = encoder.begin_compute_pass(&Default::default());
         pass.set_pipeline(&self.pipeline);
         let immediates: [u32; 4] = [
             mode,
             seed,
-            u32::from_le_bytes(randomization_chance_temp.unwrap_or((0u32,0f32)).1.to_le_bytes()),
-            randomization_chance_temp.unwrap_or((0u32,0f32)).0,
+            u32::from_le_bytes(
+                replace_old_machine_if_better_temp.unwrap_or(0f32).to_le_bytes()
+            ),
+            randomization_chance.unwrap_or(0u32),
         ];
         pass.set_immediates(0, bytemuck::cast_slice(&immediates));
         pass.set_bind_group(0, &self.bind_group, &[]);
@@ -434,50 +437,29 @@ impl GpuRuntime {
     }
 
     pub async fn reshuffle_machines(&mut self) -> anyhow::Result<()> {
-        let machine_sources_raw: Vec<u8> = self.read_buffer(&self.buffers.sources_old).await?;
-        let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_old).await?;
-        let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
+        self.load_old_from_gpu(true).await?;
 
-        let machine_sources =
-            bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw);
-        let machine_bitfiddle =
-            bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw);
-        let output_vs_golden: &[[u32; 4]; TOTAL_MACHINES] =
-            bytemuck::cast_slice(&output_vs_golden_raw)
-                .try_into()
-                .unwrap();
-        let mut sorted_scores: Vec<_> = output_vs_golden
-            .iter()
-            .zip(0..output_vs_golden.len())
-            .collect();
-        sorted_scores.sort_unstable_by(|k1, k2| k1.0[0].cmp(&k2.0[0]));
-        for k in sorted_scores.iter() {
-            log::info!("{:?}", k.0);
-        }
         for i in 0..TOTAL_MACHINES / 2 {
-            sorted_scores[TOTAL_MACHINES - 1 - i] = sorted_scores[i];
+            self.machines.sources[TOTAL_MACHINES - 1 - i] = self.machines.sources[i];
+            self.machines.bitfiddle[TOTAL_MACHINES - 1 - i] = self.machines.bitfiddle[i];
+            self.machines.score[TOTAL_MACHINES - 1 - i] = self.machines.score[i];
         }
-
-        for i in 0..machine_sources.len() {
-            self.machines.sources[i] = machine_sources[sorted_scores[i].1];
-            self.machines.bitfiddle[i] = machine_bitfiddle[sorted_scores[i].1];
-        }
-
+        log::info!("Writing...");
         self.write_buffer(
             &self.buffers.sources_old,
             bytemuck::cast_slice(&self.machines.sources),
         )
         .await?;
+        log::info!("Wrote");
         self.write_buffer(
             &self.buffers.bitfiddle_old,
             bytemuck::cast_slice(&self.machines.bitfiddle),
         )
         .await?;
 
-        let scores_only: Vec<[u32; 4]> = sorted_scores.iter().map(|k| *k.0).collect();
         self.write_buffer(
             &self.buffers.output_vs_golden,
-            bytemuck::cast_slice(&scores_only),
+            bytemuck::cast_slice(&self.machines.score),
         )
         .await?;
 
@@ -486,28 +468,11 @@ impl GpuRuntime {
 
     pub async fn store_results(&mut self) -> anyhow::Result<()> {
         let output_data = self.read_buffer(&self.buffers.output).await?;
-
-        let machine_sources_raw: Vec<u8> = self.read_buffer(&self.buffers.sources_new).await?;
-        let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_new).await?;
-        let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
-
-        self.machines.sources =
-            bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw)
-                .try_into()
-                .unwrap();
-        self.machines.bitfiddle =
-            bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw)
-                .try_into()
-                .unwrap();
-
-        let output_vs_golden: &[[u32; 4]; TOTAL_MACHINES] =
-            bytemuck::cast_slice(&output_vs_golden_raw)
-                .try_into()
-                .unwrap();
-
+        // Do not sort. If sorted, the output_data will not be sorted, while the self.machines are sorted
+        self.load_old_from_gpu(false).await?;
         let mut best_machine = 0;
-        for i in 0..output_vs_golden.len() {
-            if output_vs_golden[best_machine][1] > output_vs_golden[i][1] {
+        for i in 0..TOTAL_MACHINES {
+            if self.machines.score[best_machine][0] > self.machines.score[i][0] {
                 best_machine = i;
             }
         }
@@ -521,21 +486,57 @@ impl GpuRuntime {
         log::info!("Size of output: {}", size_of_one);
         fs::write(
             BEST_MACHINE_OUTPUT_FILE,
-            &output_data[selected_machine * size_of_one..(selected_machine + 1) * size_of_one],
+            &output_data[size_of::<u32>() * U32_PER_OUTPUT * PADDING_STIMS
+                + selected_machine * size_of_one
+                ..(selected_machine + 1) * size_of_one],
         )?;
+
+        Ok(())
+    }
+
+    pub async fn load_old_from_gpu(&mut self, sort_by_score: bool) -> anyhow::Result<()> {
+        let machine_sources_raw: Vec<u8> = self.read_buffer(&self.buffers.sources_old).await?;
+        let machine_bitfiddle_raw = self.read_buffer(&self.buffers.bitfiddle_old).await?;
+        let output_vs_golden_raw = self.read_buffer(&self.buffers.output_vs_golden).await?;
+
+        let machine_sources =
+            bytemuck::cast_slice::<u8, [u32; U32_NEEDED_FOR_FF * 32]>(&machine_sources_raw);
+        let machine_bitfiddle =
+            bytemuck::cast_slice::<u8, [[u32; 4]; U32_NEEDED_FOR_FF]>(&machine_bitfiddle_raw);
+        let output_vs_golden: &[[u32; 4]] = bytemuck::cast_slice(&output_vs_golden_raw);
+
+        if sort_by_score {
+            let mut sorted_scores: Vec<(&[u32; 4], usize)> = output_vs_golden
+                .iter()
+                .zip(0..output_vs_golden.len())
+                .collect();
+            sorted_scores.sort_unstable_by(|([s1, _, _, _], _), ([s2, _, _, _], _)| s1.cmp(s2));
+
+            for i in 0..machine_sources.len() {
+                self.machines.sources[i] = machine_sources[sorted_scores[i].1];
+                self.machines.bitfiddle[i] = machine_bitfiddle[sorted_scores[i].1];
+                self.machines.score[i] = output_vs_golden[sorted_scores[i].1];
+            }
+        } else {
+            self.machines.sources = machine_sources.try_into().unwrap();
+            self.machines.bitfiddle = machine_bitfiddle.try_into().unwrap();
+            self.machines.score = output_vs_golden.try_into().unwrap();
+        }
 
         Ok(())
     }
 
     pub async fn write_buffer(&self, buff: &wgpu::Buffer, data: &[u8]) -> anyhow::Result<()> {
         self.queue.write_buffer(&buff, 0, &data);
+        self.queue.submit([]);
+
         let (tx, rx) = bounded(1);
         self.queue.on_submitted_work_done(move || {
             if let Err(e) = tx.send(0u32) {
                 log::error!("Error while sending {:?}", e);
             }
         });
-        self.queue.submit([]);
+        self.device.poll(wgpu::PollType::wait_indefinitely())?;
         rx.recv_async().await?;
         Ok(())
     }
@@ -548,13 +549,14 @@ impl GpuRuntime {
             let mut encoder = self.device.create_command_encoder(&Default::default());
             encoder.copy_buffer_to_buffer(buff, 0, &self.buffers.tmp, 0, map_size);
 
+            self.queue.submit([encoder.finish()]);
             let (tx, rx) = bounded(1);
             self.queue.on_submitted_work_done(move || {
                 if let Err(e) = tx.send(0u32) {
                     log::error!("Error while sending {:?}", e);
                 }
             });
-            self.queue.submit([encoder.finish()]);
+
             self.device.poll(wgpu::PollType::wait_indefinitely())?;
             rx.recv_async().await?;
         }

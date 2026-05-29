@@ -2,21 +2,20 @@ mod gpu;
 mod structs;
 
 use crate::gpu::GpuRuntime;
-use crate::structs::{Machines, PREVIOUS_STAGE_FF, U32_PER_OUTPUT, U32_PER_STIMULI};
+use crate::structs::{Machines, PADDING_STIMS, U32_PER_OUTPUT, U32_PER_STIMULI};
 use std::fs;
 
 const STIMULI_FILE: &str = "../../verilator/stimuli/ram_init.bin";
 const GOLDEN_FILE: &str = "../../verilator/stimuli/font8bit.data";
-const STIMULI_TRIMMER: usize = 1024 * 4; // For testing only to reduce runtime size
+const STIMULI_TRIMMER: usize = 64; // For testing only to reduce runtime size
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
     log::info!("Starting...");
     write_stims()?;
     log::info!("Wrote stims");
     let machines = Box::new(Machines::new());
-    const PADDING_STIMS: usize = PREVIOUS_STAGE_FF.len() - 2;
 
     let mut stimuli_u8: Vec<u8> = fs::read(STIMULI_FILE)?;
 
