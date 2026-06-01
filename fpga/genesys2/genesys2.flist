@@ -1,0 +1,4 @@
+./src/hvsync_generator.sv
+./src/blackboxes.v
+../../res/font/out/CLEagleIII_8x16_rom.sv
+./src/genesys2_top.sv
