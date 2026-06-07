@@ -46,9 +46,13 @@ def generate_and_export_image(filename="output-original.png") -> Image:
     return img
 
 def binary_file_to_img(filename: str = "../verilator/stimuli/font8bit.data") -> Image:
-    img = PIL.Image.new("1", (WIDTH, HEIGHT), color=0)
+    img = PIL.Image.new("RGB", (WIDTH, HEIGHT), color=0)
     with open(filename, "rb") as f:
         data = f.read()
+        LATENCY = 15
+        print(len(data))
+        data = data[(LATENCY-1) * 4:]
+        print(len(data))
 
     idx = 0
     for ascii in range(128):
@@ -57,9 +61,11 @@ def binary_file_to_img(filename: str = "../verilator/stimuli/font8bit.data") -> 
                 b = data[idx]
                 idx += 4 # 4 bytes at a time, the stimuli/output have padding
             else:
-                b = 0
+                b = -1
             for x in range(8):
-                pixel_val = 1 if (b & (1 << (7 - x))) else 0
+                pixel_val = 0x00FF00
+                if b != -1:
+                    pixel_val = 0xFFFFFF if (b & (1 << (7 - x))) else 0x7f7f7f
                 img.putpixel(((ascii % 16) * 8 + x, (ascii // 16) * 8 + y), pixel_val)
     return img
 
@@ -81,7 +87,7 @@ def generate_golden(img: Image, output: str = "../verilator/stimuli/font8bit.dat
 
 
 if __name__ == '__main__':
-    # img : Image = generate_and_export_image()
+    img : Image = generate_and_export_image()
     # generate_golden(img)
     
     img = binary_file_to_img("../verilator/output-rs.bin")

@@ -136,21 +136,19 @@ fn run_new_machine(machine: u32, start_stimuli: u32) {
 
 fn replace_old_machine_if_new_is_better(machine: u32, temp: f32 ,rng: ptr<function, XorWowState>) {
     // After running, compare with the old machine
-    var new_machine_better = output_vs_golden[machine][1] < output_vs_golden[machine][0];
+    let new_machine_better : bool = output_vs_golden[machine][1] < output_vs_golden[machine][0];
     var overridden = false;
-    if (!new_machine_better && output_vs_golden[machine][0] != 0) {
-        if (temp > 0.000001) {
-            let delta = f32(output_vs_golden[machine][0]) - f32(output_vs_golden[machine][1]);
-            let exponent = delta / temp;
-            if (exponent > -100) {
-                var probability = exp2(exponent);
-                if ((random_xorwow(rng) & 0xFFFF) < u32(probability * 0xFFFF)) {
-                    overridden = true;
-                    output_vs_golden[machine][3]++;
-                }
+    if (!new_machine_better && output_vs_golden[machine][0] != output_vs_golden[machine][1] && output_vs_golden[machine][0] != 0 && temp > 0.000001) {
+        let delta : f32 = f32(output_vs_golden[machine][0]) - f32(output_vs_golden[machine][1]);
+        let exponent : f32 = delta / temp;
+        if (exponent > -100.0) {
+            let probability : f32 = exp2(exponent);
+            if ((random_xorwow(rng) & 0xFFFF) < u32(probability * 0xFFFF)) {
+                overridden = true;
+                output_vs_golden[machine][3]++;
+                output_vs_golden[machine][2]--;
             }
         }
-        
     }
     if (new_machine_better || overridden) {
         // New machine is better than old machine, so copy

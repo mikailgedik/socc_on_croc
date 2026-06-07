@@ -1,0 +1,5 @@
+output*
+.~lock*
+stats.csv
+csv_eval.ods
+machines.bin

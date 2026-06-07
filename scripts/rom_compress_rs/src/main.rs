@@ -4,10 +4,12 @@ mod structs;
 use crate::gpu::GpuRuntime;
 use crate::structs::{Machines, PADDING_STIMS, U32_PER_OUTPUT, U32_PER_STIMULI};
 use std::fs;
+use std::ops::Range;
 
 const STIMULI_FILE: &str = "../../verilator/stimuli/ram_init.bin";
 const GOLDEN_FILE: &str = "../../verilator/stimuli/font8bit.data";
-const STIMULI_TRIMMER: usize = 64; // For testing only to reduce runtime size
+// For testing only to reduce runtime size
+const STIMULI_TRIMMER: Option<Range<usize>> = Some((65 * 8)..(68 * 8));
 
 #[tokio::main(flavor = "current_thread")]
 pub async fn main() -> anyhow::Result<()> {
@@ -15,20 +17,15 @@ pub async fn main() -> anyhow::Result<()> {
     log::info!("Starting...");
     write_stims()?;
     log::info!("Wrote stims");
-    let machines = Box::new(Machines::new());
+
+    let machines: Box<Machines> = Machines::new();
 
     let mut stimuli_u8: Vec<u8> = fs::read(STIMULI_FILE)?;
-
     let mut golden_file: Vec<u8> = fs::read(GOLDEN_FILE)?;
-    if golden_file.len() >= (4 * STIMULI_TRIMMER) {
-        golden_file.drain((4 * STIMULI_TRIMMER)..);
-    } else {
-        log::info!("Golden file not trimmed!");
-    }
 
-    // TODO this only works if U32_PER_OUTPUT is the same as U32_PER_STIMULI
-    if stimuli_u8.len() > golden_file.len() {
-        stimuli_u8.drain(golden_file.len()..);
+    if let Some(Range { start, end }) = STIMULI_TRIMMER {
+        golden_file.drain((end * size_of::<u32>() * U32_PER_OUTPUT)..);
+        golden_file.drain(..(start * size_of::<u32>() * U32_PER_OUTPUT));
     }
 
     let mut golden = vec![0u8; size_of::<u32>() * U32_PER_OUTPUT * PADDING_STIMS];
@@ -56,10 +53,12 @@ pub async fn main() -> anyhow::Result<()> {
 }
 
 pub fn write_stims() -> anyhow::Result<()> {
-    let mut v: Vec<u8> = Vec::with_capacity(STIMULI_TRIMMER);
-    for i in 0..(STIMULI_TRIMMER as u32) {
-        v.extend(u32::to_le_bytes(i));
+    if let Some(trimmer) = STIMULI_TRIMMER {
+        let mut v: Vec<u8> = Vec::with_capacity(trimmer.len());
+        for i in trimmer {
+            v.extend(u32::to_le_bytes(i as u32));
+        }
+        fs::write(STIMULI_FILE, v)?;
     }
-    fs::write(STIMULI_FILE, v)?;
     Ok(())
 }

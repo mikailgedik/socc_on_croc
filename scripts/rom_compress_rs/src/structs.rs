@@ -24,14 +24,15 @@ macro_rules! decl_consts {
 }
 
 // First entry is the size of the input!
-const _INTERNAL_CONSTANTS: (usize, &[usize]) =
-    decl_consts!(10, 64, 64, 64, 64, 64, 64, 64, 64, 64, 256, 128, 64, 32, 16, 8);
+const _INTERNAL_CONSTANTS: (usize, &[usize]) = decl_consts!(
+    10,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,24,16,8
+);
 
 pub const TOTAL_FF: usize = _INTERNAL_CONSTANTS.0;
 pub const U32_NEEDED_FOR_FF: usize = (TOTAL_FF + 31) / 32;
 pub const PREVIOUS_STAGE_FF: &[usize] = _INTERNAL_CONSTANTS.1;
 pub const OUTPUT_START: usize = TOTAL_FF - PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1];
-pub const TOTAL_MACHINES: usize = 32;
+pub const TOTAL_MACHINES: usize = 1;
 pub const U32_PER_STIMULI: usize = (PREVIOUS_STAGE_FF[0] + 31) / 32;
 pub const U32_PER_OUTPUT: usize = (PREVIOUS_STAGE_FF[PREVIOUS_STAGE_FF.len() - 1] + 31) / 32;
 pub const PADDING_STIMS: usize = PREVIOUS_STAGE_FF.len() - 2;
@@ -74,14 +75,21 @@ pub struct Machines {
 }
 
 impl Machines {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> Box<Self> {
+        // Box it first, else stack overflow (allocate it directly on heap)
+        let mut b: Box<Self> = Box::<Self>::new(Self {
             bitfiddle: [[[0u32; 4]; U32_NEEDED_FOR_FF]; TOTAL_MACHINES],
             sources: [[0u32; U32_NEEDED_FOR_FF * 32]; TOTAL_MACHINES],
+            score: [[0u32; 4]; TOTAL_MACHINES],
+        });
+
+        for s in &mut b.score {
             // The "default" machine has no score, so we just set it at worst
             // Only the first value is relevant here. The other three are used internally to track stuff
-            score: [[u32::MAX, 0, 0, 0]; TOTAL_MACHINES],
+            s[0] = u32::MAX;
         }
+
+        b
     }
 
     pub fn to_sv(&self, machine: usize, module_name: &str) -> String {
@@ -141,5 +149,35 @@ impl Machines {
             .replace("%LOGIC_DECL%", &logic_decls)
             .replace("%COMB%", &comb_stmts)
             .replace("%FLIPFLOP%", &ff_stms);
+    }
+
+    /// Assumes that the machines are sorted by score!
+    pub fn compute_statistics(&self) -> ((f32, f32, f32), (f32, f32, f32), (f32, f32, f32)) {
+        let mut score_sum = 0;
+        let mut replacment_sum = 0;
+        let mut override_sum = 0;
+        for s in &self.score {
+            score_sum += s[0];
+            replacment_sum += s[2];
+            override_sum += s[3];
+        }
+
+        return (
+            (
+                self.score[0][0] as f32,
+                (score_sum as f32) / (TOTAL_MACHINES as f32),
+                self.score[TOTAL_MACHINES - 1][0] as f32,
+            ),
+            (
+                self.score[0][2] as f32,
+                (replacment_sum as f32) / (TOTAL_MACHINES as f32),
+                self.score[TOTAL_MACHINES - 1][2] as f32,
+            ),
+            (
+                self.score[0][3] as f32,
+                (override_sum as f32) / (TOTAL_MACHINES as f32),
+                self.score[TOTAL_MACHINES - 1][3] as f32,
+            ),
+        );
     }
 }
