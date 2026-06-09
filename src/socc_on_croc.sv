@@ -4,36 +4,23 @@
 module socc_on_croc  #(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
-  parameter type obi_rsp_t = logic,
-  parameter int ColorWidthBytes = 1
+  parameter type obi_rsp_t = logic
 ) (
-  input  logic     clk_i,
-  input  logic     rst_ni,
-  input logic enable_i,
-  input logic hsync_pol_i,
-  input logic vsync_pol_i,
+  // clk_vga must be a multiple of clk_obi, or clk_obi
+  input logic clk_obi_i,
+  input logic clk_vga_i,
+  input logic rst_ni,
 
   output obi_req_t obi_req_o,
   input obi_rsp_t obi_rsp_i,
-
-  output logic h_sync_o,
-  output logic v_sync_o,
-  output logic [8*ColorWidthBytes-1:0] color_o
+  output logic hsync_o,
+  output logic vsync_o,
+  output logic [7:0] color_o
 );
 
 localparam FSM_REG_WIDTH = 16;
 localparam BUFFER_DEPTH_BASE = 3;
 localparam MAX_OUTSTANDING_REQS_BASE = 3;
-
-localparam total_pixels_h = 16'd800;
-localparam active_pixels_h = 16'd640;
-localparam back_porch_h = 16'd48;
-localparam h_sync_width = 16'd96;
-
-localparam total_pixels_v = 16'd525;
-localparam active_pixels_v = 16'd480;
-localparam back_porch_v = 16'd33;
-localparam v_sync_width = 16'd2;
 
 localparam max_transactions = (ObiCfg.AddrWidth)'(ColorWidthBytes * active_pixels_h * active_pixels_v / (ObiCfg.DataWidth/8));
 
