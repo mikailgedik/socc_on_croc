@@ -1,4 +1,4 @@
-module glyph_rom_wrapper(
+module glyph_rom_wrapper#(
     parameter int ADDRESS_WIDTH = 32'd0,
     parameter int DATA_WIDTH = 32'd0,
     parameter int TOTAL_WORDS = 32'd0,

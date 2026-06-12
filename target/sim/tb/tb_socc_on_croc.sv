@@ -12,16 +12,7 @@ module tb_socc_on_croc;
   parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
   parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
 
-  localparam total_pixels_h = 16'd800;
-  localparam active_pixels_h = 16'd640;
-  localparam back_porch_h = 16'd48;
-  localparam h_sync_width = 16'd96;
-
-  localparam total_pixels_v = 16'd525;
-  localparam active_pixels_v = 16'd480;
-  localparam back_porch_v = 16'd33;
-  localparam v_sync_width = 16'd2;
-
+  
   //------------------ Logic Wires ------------------//
 
   logic       eoc;            // End of computation
@@ -29,8 +20,10 @@ module tb_socc_on_croc;
   logic       rst_n;
   logic enable;
   logic h_sync, v_sync;
-  logic [23:0] color;
+  logic [7:0] color;
 
+
+  
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
     // Generating the clock
@@ -50,10 +43,10 @@ module tb_socc_on_croc;
   end
 
   //------------------ Design Under Test ------------------//
-  socc_with_rom #() i_dut (
-    .clk_i     (clk       ),
+  obi_tester #() i_dut (
+    .clk_obi_i (clk       ),
+    .clk_vga_i (),
     .rst_ni    (rst_n     ),
-    .enable_i(enable),
     
     .hsync_o(h_sync),
     .vsync_o(v_sync),

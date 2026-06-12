@@ -1,10 +1,10 @@
 `include "common_cells/registers.svh"
 
-module obi_sub(
+module obi_sub#(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
-  parameter int RAM_ADDR_WIDTH = 'h0,
+  parameter int RAM_ADDR_WIDTH = 'h0
 ) (
   // clk_vga must be a multiple of clk_obi, or clk_obi
   input logic clk_i,
@@ -68,6 +68,9 @@ module obi_sub(
 
 
   always_comb begin : obi_communication
+    logic [ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH] destination_selector;
+    logic [RAM_ADDR_WIDTH-1:0] dest_addr;
+
     config_d = config_q;
 
     rid_d = obi_req_i.a.aid;
@@ -80,25 +83,23 @@ module obi_sub(
     ram_we_o = '0;
     ram_selector[1:0] = '0;
 
-    logic [ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH] destination_selector = obi_req_i.req.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH];
-    logic [RAM_ADDR_WIDTH-1:0] dest_addr = obi_req_i.req.addr[RAM_ADDR_WIDTH-1:0];
+    destination_selector = obi_req_i.req.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH];
+    dest_addr = obi_req_i.req.addr[RAM_ADDR_WIDTH-1:0];
 
     if (destination_selector == 'h0) begin
-      case (dest_addr) begin
+      case (dest_addr)
         'h0,'h1,'h2,'h3: begin
           rdata = config_q[dest_addr[1:0]];
           if(obi_req_i.req.we) begin
-            generate
-              for(int b = 0; b < ObiCfg.DataWidth/8; i++) begin
-                if (obi_req_i.req.be[b] == '1) begin
-                  config_d[dest_addr[1:0]][8*b +: 8] = obi_req_i.req.wdata[8*b +: 8];
-                end
+            for(int b = 0; b < ObiCfg.DataWidth/8; i++) begin
+              if (obi_req_i.req.be[b] == '1) begin
+                config_d[dest_addr[1:0]][8*b +: 8] = obi_req_i.req.wdata[8*b +: 8];
               end
-            endgenerate
+            end
           end
         end
         default: err_d = '1;
-      end
+      endcase
     end else begin
       ram_addr_o = dest_addr;
       ram_we_o = obi_req_i.req.we;
@@ -107,11 +108,14 @@ module obi_sub(
         rdata = 'hdeadbeef;
       end else begin
         ram_data_o = obi_req_i.req.wdata;
-        case (destination_selector) begin
+        case (destination_selector)
           'h1: ram_selector = '0;
           'h2: ram_selector = '1;
-          default: err_d = '1;
-        end
+          default: begin
+            err_d = '1;
+            ram_we_o = '0;
+          end
+        endcase
       end
     end
   end

@@ -17,7 +17,7 @@ sources:
   # Level 0
   - rtl/*.sv
   - rtl/generated/*.sv
-  - target: any(fpga, xilinx, vsim)
+  - target: any(fpga, xilinx, vsim, verilator)
     files:
       - target/common/rtl/*.sv
   - target: all(fpga, xilinx)

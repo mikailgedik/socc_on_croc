@@ -1,7 +1,5 @@
-module address_generator(
-
+module address_generator #(
 ) (
-
 );
 
 endmodule

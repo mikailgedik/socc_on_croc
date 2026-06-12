@@ -1,7 +1,7 @@
-module text_ram_wrapper(
+module text_ram_wrapper#(
     parameter int ADDRESS_WIDTH = 32'd0,
     parameter int DATA_WIDTH = 32'd0,
-    parameter int TOTAL_WORDS = 32'd0,
+    parameter int TOTAL_WORDS = 32'd0
 ) (
     // TODO reset in sram?
     input logic clk_port0_i,

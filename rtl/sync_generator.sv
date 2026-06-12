@@ -4,7 +4,7 @@ module sync_generator #(
 ) (
     input logic clk_i,
     input logic rst_ni,
-    input logic enable_i,
+    input logic enable_i
 );
 
 endmodule
