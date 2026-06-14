@@ -22,6 +22,9 @@ reqs : list[ObiR] = [
     ObiR(0x0, 0x0, False),
 ]
 
+for i in range(128):
+    reqs.append(ObiR(4*i + (1 << RAM_ADDR_WIDTH) * 1, (2 * i) | ((2 * i + 1) << 16), True))
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         raise ValueError("to many/few args. only provide output file")

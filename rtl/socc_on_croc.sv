@@ -23,6 +23,7 @@ module socc_on_croc  #(
   logic [RAM_ADDR_WIDTH-1:0] ram_addr;
   logic [ObiCfg.DataWidth-1:0] ram_data;
   logic ram_we;
+  logic ram_selector;
 
   obi_sub #(
     .ObiCfg(ObiCfg),
@@ -42,14 +43,38 @@ module socc_on_croc  #(
     .ram_data_o(ram_data),
     // .ram_data_i(),
     .ram_we_o(ram_we),
-    .ram_selector()
+    .ram_selector(ram_selector)
   );
 
-  always_ff @(posedge clk_obi_i) begin
-    if(ram_we) begin
-      $display("writing addr: %x data: %x", ram_addr, ram_data);
-    end
-  end
+  text_ram_wrapper #(
+    .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
+    .DATA_WIDTH(ObiCfg.DataWidth)
+  ) i_text_ram (
+    .port0_clk_i(),
+    .port0_addr_i(),
+    .port0_ascii_o(),
+    .port0_color_blink_o(),
 
+    .port1_clk_i(clk_obi_i),
+    .port1_addr_i(ram_addr),
+    .port1_data_i(ram_data),
+    .port1_we_i(ram_we && (ram_selector == 'h0))
+  );
 
+  glyph_ram_wrapper #(
+    .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
+    .DATA_WIDTH(ObiCfg.DataWidth),
+    .MAX_GLYPH_DIMENSION_LOG(32'd4)
+  ) i_glyph_ram (
+    .port0_clk_i(),
+    .port0_ascii_i(),
+    .port0_x_i(),
+    .port0_y_i(),
+    .port0_pixel_o(),
+
+    .port1_clk_i(clk_obi_i),
+    .port1_addr_i(ram_addr),
+    .port1_data_i(ram_data),
+    .port1_we_i(ram_we && (ram_selector == 'h1))
+  );
 endmodule

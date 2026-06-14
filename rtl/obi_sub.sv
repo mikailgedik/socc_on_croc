@@ -90,7 +90,7 @@ module obi_sub#(
       // Force all read/writes to be aligned to the bus width
       // after that, lower addr bits can be discarded
       err_d = '1;
-      $error("Lower bits!");
+      $error("Lower bits should not be set!");
     end else if (destination_selector == 'h0) begin
       case (dest_addr)
         'h0: begin

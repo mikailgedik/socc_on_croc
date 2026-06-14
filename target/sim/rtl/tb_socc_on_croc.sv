@@ -82,79 +82,79 @@ module tb_socc_on_croc;
       $finish(1);
   end
 
-  localparam logic[31:0] img_w = 'd800, img_h = 'd525, img_byte_per_pixel = 'd3;
-  localparam logic[31:0] img_w_bytes = (img_byte_per_pixel * img_w + 3) / 4 * 4; //Round up each row to 4 bytes
-  // pad w to 4 bytes
-  localparam img_file_size = 14 + 40 + img_h * ((img_byte_per_pixel * img_w + 3) / 4 * 4);
-  byte header_data [] = {
-    8'h42, 8'h4D,
-    img_file_size[7:0],
-    img_file_size[15:8],
-    img_file_size[23:16],
-    img_file_size[31:24],
+  // localparam logic[31:0] img_w = 'd800, img_h = 'd525, img_byte_per_pixel = 'd3;
+  // localparam logic[31:0] img_w_bytes = (img_byte_per_pixel * img_w + 3) / 4 * 4; //Round up each row to 4 bytes
+  // // pad w to 4 bytes
+  // localparam img_file_size = 14 + 40 + img_h * ((img_byte_per_pixel * img_w + 3) / 4 * 4);
+  // byte header_data [] = {
+  //   8'h42, 8'h4D,
+  //   img_file_size[7:0],
+  //   img_file_size[15:8],
+  //   img_file_size[23:16],
+  //   img_file_size[31:24],
     
-    0,0,0,0,
-    14+40,0,0,0,
+  //   0,0,0,0,
+  //   14+40,0,0,0,
     
-    // START DIB (40 byes)
-    40,0,0,0,
-    img_w[7:0],img_w[15:8],img_w[23:16],img_w[31:24],
-    img_h[7:0],img_h[15:8],img_h[23:16],img_h[31:24],
-    8'b1,8'b0,    //Color Plane
-    8'(img_byte_per_pixel*8),0,   //Bits per Pixel
-    0,0,0,0,
-    0,0,0,0,
-    0,0,0,0,//Pixel per meter
-    0,0,0,0,
-    0,0,0,0,
-    0,0,0,0
-  };
-  int img_data [img_h][img_w];
+  //   // START DIB (40 byes)
+  //   40,0,0,0,
+  //   img_w[7:0],img_w[15:8],img_w[23:16],img_w[31:24],
+  //   img_h[7:0],img_h[15:8],img_h[23:16],img_h[31:24],
+  //   8'b1,8'b0,    //Color Plane
+  //   8'(img_byte_per_pixel*8),0,   //Bits per Pixel
+  //   0,0,0,0,
+  //   0,0,0,0,
+  //   0,0,0,0,//Pixel per meter
+  //   0,0,0,0,
+  //   0,0,0,0,
+  //   0,0,0,0
+  // };
+  // int img_data [img_h][img_w];
 
-  //------------------ Response Check ------------------//
-  task automatic capture_image(input string file_name);
-      int fd;
-      int rgb;
-      @(negedge v_sync);
-      for(int y = 0; y < img_h; y++) begin
-          for(int x = 0; x < img_w; x++) begin
-            if(v_sync == 'b0) begin
-              img_data[y][x] = 'h7F7F7F;
-            end else if (h_sync == 'b0) begin
-              img_data[y][x] = 'h00FF00;
-            end else begin
-              rgb = 32'(color);
-              img_data[y][x] = rgb;
-            end
+  // //------------------ Response Check ------------------//
+  // task automatic capture_image(input string file_name);
+  //     int fd;
+  //     int rgb;
+  //     @(negedge v_sync);
+  //     for(int y = 0; y < img_h; y++) begin
+  //         for(int x = 0; x < img_w; x++) begin
+  //           if(v_sync == 'b0) begin
+  //             img_data[y][x] = 'h7F7F7F;
+  //           end else if (h_sync == 'b0) begin
+  //             img_data[y][x] = 'h00FF00;
+  //           end else begin
+  //             rgb = 32'(color);
+  //             img_data[y][x] = rgb;
+  //           end
 
-            #(T_CLK);
-          end
-      end
+  //           #(T_CLK);
+  //         end
+  //     end
 
-      fd = $fopen (file_name, "wb");
-      if(fd == 0) $error("Could not open file file_name");
+  //     fd = $fopen (file_name, "wb");
+  //     if(fd == 0) $error("Could not open file file_name");
 
-      foreach(header_data[i]) begin
-          $fwrite(fd, "%c", header_data[i]);
-      end
+  //     foreach(header_data[i]) begin
+  //         $fwrite(fd, "%c", header_data[i]);
+  //     end
 
-      img_data[0][0] = 'h0000FF; //blue
-      img_data[0][1] = 'h00FF00; //green
-      img_data[0][2] = 'hFF0000; //red
+  //     img_data[0][0] = 'h0000FF; //blue
+  //     img_data[0][1] = 'h00FF00; //green
+  //     img_data[0][2] = 'hFF0000; //red
       
-      img_data[img_h - 5][0] = 'hFF0000;
-      img_data[0][img_w - 1] = 'h00FF00;
+  //     img_data[img_h - 5][0] = 'hFF0000;
+  //     img_data[0][img_w - 1] = 'h00FF00;
       
-      for(int y = img_h - 1; y >= 0; y--) begin
-          for(int x = 0; x < img_w; x++) begin
-            for(int i = 0; i < img_byte_per_pixel; i++) begin
-              $fwrite(fd, "%c", 8'(img_data[y][x] >> (i * 8)));
-            end
-          end
-          for(int i = 0; i < img_w_bytes - img_byte_per_pixel * img_w; i++) begin
-            $fwrite(fd, "%c", 8'b0);
-          end
-      end
-      $fclose(fd);
-  endtask //capture_image
+  //     for(int y = img_h - 1; y >= 0; y--) begin
+  //         for(int x = 0; x < img_w; x++) begin
+  //           for(int i = 0; i < img_byte_per_pixel; i++) begin
+  //             $fwrite(fd, "%c", 8'(img_data[y][x] >> (i * 8)));
+  //           end
+  //         end
+  //         for(int i = 0; i < img_w_bytes - img_byte_per_pixel * img_w; i++) begin
+  //           $fwrite(fd, "%c", 8'b0);
+  //         end
+  //     end
+  //     $fclose(fd);
+  // endtask //capture_image
 endmodule
