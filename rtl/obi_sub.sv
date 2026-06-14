@@ -4,7 +4,10 @@ module obi_sub#(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
-  parameter int RAM_ADDR_WIDTH = 'h0
+  parameter int RAM_ADDR_WIDTH = 'h0,
+
+  // Derived parameter, do not overwrite!
+  parameter int DATAWIDTH_CLOG = $clog2(ObiCfg.DataWidth/8) //The lower bits must be 0 (every write/read must be aligned with ObiCfg.DataWidth/8)
 ) (
   // clk_vga must be a multiple of clk_obi, or clk_obi
   input logic clk_i,
@@ -14,13 +17,10 @@ module obi_sub#(
   output obi_rsp_t obi_rsp_o,
 
   output logic[ObiCfg.DataWidth-1:0] conf0_o,
-  output logic[ObiCfg.DataWidth-1:0] conf1_o,
-  output logic[ObiCfg.DataWidth-1:0] conf2_o,
-  output logic[ObiCfg.DataWidth-1:0] conf3_o,
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
-  input  logic[1:0][ObiCfg.DataWidth-1:0] ram_data_i,
+  // input  logic[1:0][ObiCfg.DataWidth-1:0] ram_data_i,
   output logic ram_we_o,
   output logic ram_selector
 );
@@ -54,7 +54,7 @@ module obi_sub#(
   //   logic            rvalid;
   // } sbr_obi_rsp_t;
 
-  logic [1:0][ObiCfg.DataWidth-1:0] config_d, config_q;
+  logic [ObiCfg.DataWidth-1:0] config_d, config_q;
   `FF(config_q, config_d, 'b0, clk_i, rst_ni);
 
   // OBI signals/regs
@@ -64,50 +64,58 @@ module obi_sub#(
   `FF(rvalid_q, rvalid_d, 'b0, clk_i, rst_ni);
   logic err_d, err_q;
   `FF(err_q, err_d, 'b0, clk_i, rst_ni);
-  logic [ObiCfg.DataWidth-1:0] rdata;
-
+  logic [ObiCfg.DataWidth-1:0] rdata_d, rdata_q;
+  `FF(rdata_q, rdata_d, 'b0, clk_i, rst_ni);
 
   always_comb begin : obi_communication
-    logic [ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH] destination_selector;
-    logic [RAM_ADDR_WIDTH-1:0] dest_addr;
-
+    logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] destination_selector;
+    logic [RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1 - DATAWIDTH_CLOG:0] dest_addr;
+    logic [DATAWIDTH_CLOG-1:0] lower_bits;
     config_d = config_q;
 
     rid_d = obi_req_i.a.aid;
     rvalid_d = obi_req_i.req & obi_rsp_o.gnt;
     err_d = '0;
-    rdata = '0;
+    rdata_d = 'hdeadbeef;
 
     ram_addr_o = '0;
     ram_data_o = '0;
     ram_we_o = '0;
-    ram_selector[1:0] = '0;
+    ram_selector = '0;
 
-    destination_selector = obi_req_i.req.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH];
-    dest_addr = obi_req_i.req.addr[RAM_ADDR_WIDTH-1:0];
-
-    if (destination_selector == 'h0) begin
+    destination_selector = obi_req_i.a.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
+    dest_addr = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
+    lower_bits = obi_req_i.a.addr[DATAWIDTH_CLOG-1:0];
+    if (lower_bits != '0) begin
+      // Force all read/writes to be aligned to the bus width
+      // after that, lower addr bits can be discarded
+      err_d = '1;
+      $error("Lower bits!");
+    end else if (destination_selector == 'h0) begin
       case (dest_addr)
-        'h0,'h1,'h2,'h3: begin
-          rdata = config_q[dest_addr[1:0]];
-          if(obi_req_i.req.we) begin
-            for(int b = 0; b < ObiCfg.DataWidth/8; i++) begin
-              if (obi_req_i.req.be[b] == '1) begin
-                config_d[dest_addr[1:0]][8*b +: 8] = obi_req_i.req.wdata[8*b +: 8];
+        'h0: begin
+          rdata_d = config_q;
+          if(obi_req_i.a.we) begin
+            for(int b = 0; b < ObiCfg.DataWidth/8; b++) begin
+              if (obi_req_i.a.be[b] == '1) begin
+                config_d[8*b +: 8] = obi_req_i.a.wdata[8*b +: 8];
               end
             end
           end
         end
-        default: err_d = '1;
+        default: begin
+          err_d = '1;
+          rdata_d = 'hdeadbeef;
+        end
       endcase
     end else begin
       ram_addr_o = dest_addr;
-      ram_we_o = obi_req_i.req.we;
-      if (obi_req_i.req.we == '0) begin
+      ram_we_o = obi_req_i.a.we;
+      if (obi_req_i.a.we == '0) begin
         err_d = '1; // TODO no reading yet - maybe later?
-        rdata = 'hdeadbeef;
+        rdata_d = 'hdeadbeef;
       end else begin
-        ram_data_o = obi_req_i.req.wdata;
+        ram_data_o = obi_req_i.a.wdata;
         case (destination_selector)
           'h1: ram_selector = '0;
           'h2: ram_selector = '1;
@@ -120,12 +128,9 @@ module obi_sub#(
     end
   end
 
-  assign conf0_o = config_q[0];
-  assign conf1_o = config_q[1];
-  assign conf2_o = config_q[2];
-  assign conf3_o = config_q[3];
+  assign conf0_o = config_q;
 
-  assign obi_rsp_o.r.rdata = rdata;
+  assign obi_rsp_o.r.rdata = rdata_q;
   assign obi_rsp_o.r.rid = rid_q;
   assign obi_rsp_o.r.err = err_q;
   // assign obi_rsp_o.r.r_option = ; // TODO is this one needed? See OBI definition in croc soc

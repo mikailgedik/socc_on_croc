@@ -4,6 +4,7 @@
 `include "obi/typedef.svh"
 
 module obi_tester #(
+  parameter string obi_stimuli_file = ""
 ) (
     input logic clk_obi_i,
     input logic clk_vga_i,
@@ -11,16 +12,9 @@ module obi_tester #(
 
     output logic vsync_o,
     output logic hsync_o,
-    output logic[7:0] color_o
+    output logic[7:0] color_o,
+    output logic obi_done
 );
-
-  //------------------ Structs and Parameters ------------------//
-  parameter  T_CLK_HI       = 5ns;                 // set clock high time
-  parameter  T_CLK_LO       = 5ns;                 // set clock low time
-  localparam T_CLK          = T_CLK_HI + T_CLK_LO; // calculate clock period
-  parameter  T_APPL_DEL     = 1ns;                 // set stimuli application delay
-  parameter  T_ACQ_DEL      = 5ns;                 // set response aquisition delay
-
   localparam total_pixels_h = 16'd800;
   localparam active_pixels_h = 16'd640;
   localparam back_porch_h = 16'd48;
@@ -69,14 +63,15 @@ module obi_tester #(
   obi_manager #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
-    .obi_rsp_t(obi_rsp_t)
+    .obi_rsp_t(obi_rsp_t),
+    .orders_file_name(obi_stimuli_file)
   ) manager (
     .clk_i(clk_obi_i),
     .rst_ni(rst_ni),
 
     .obi_req_o(obi_req),
     .obi_rsp_i(obi_rsp),
-    .done()
+    .done(obi_done)
   );
 
 endmodule

@@ -19,12 +19,12 @@ sources:
   - rtl/generated/*.sv
   - target: any(fpga, xilinx, vsim, verilator)
     files:
-      - target/common/rtl/*.sv
+      - rtl/testing/*.sv
   - target: all(fpga, xilinx)
     files:
       - target/fpga/top.sv
       - target/fpga/plle2_adv.sv
   - target: any(verilator, vsim)
     files:
-      - target/sim/tb/*.sv
+      - target/sim/rtl/*.sv
     

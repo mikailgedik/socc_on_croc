@@ -4,7 +4,6 @@ module obi_manager#(
     parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
     parameter type obi_req_t = logic,
     parameter type obi_rsp_t = logic,
-    
     parameter string orders_file_name = ""
 ) (
     input logic clk_i,
@@ -25,23 +24,23 @@ module obi_manager#(
     obi_orders_t orders[];
     initial begin
         int fd;
-        int code;
+        int addr, value, attr;
         assert (ObiCfg.AddrWidth == 'd32);
         assert (ObiCfg.DataWidth == 'd32);
 
         fd = $fopen(orders_file_name, "rb");
         if(fd == 0) $error("File %s not found", orders_file_name);
         orders = new [0];
-        while ($feof(fd)) begin
+        while ($fscanf(fd, "%u%u%u", addr, value, attr) == 3) begin
             orders = new [orders.size() + 1](orders);
-            code = $fscanf(fd, "%z", orders[orders.size() - 1].addr);
-            if(code == -1) $error("eof reached");
-            code = $fscanf(fd, "%z", orders[orders.size() - 1].value);
-            if(code == -1) $error("eof reached");
-            code = $fscanf(fd, "%z", orders[orders.size() - 1].attr);
-            if(code == -1) $error("eof reached");
+            orders[orders.size() - 1].addr = addr;
+            orders[orders.size() - 1].value = value;
+            orders[orders.size() - 1].attr = attr;
         end
-
+        if(!$feof(fd)) begin
+            $error("File format wrong!");
+        end
+        $display("Loaded data: %d obi stimuli", orders.size());
         $fclose(fd);
     end
 
@@ -87,15 +86,25 @@ module obi_manager#(
         done = '0;
         incoming_idx_d = incoming_idx_q;
         if(incoming_idx_q < orders.size) begin
-            incoming_idx_d++;
+            if(obi_rsp_i.rvalid == '1) begin
+                incoming_idx_d++;
+            end
+        end else begin
+            done = '1;
+        end
+    end
+
+    always_ff @( posedge clk_i ) begin : debug_printer
+        if(incoming_idx_q < orders.size) begin
             if(obi_rsp_i.rvalid == '1) begin
                 if(obi_rsp_i.r.err) begin
-                    $error("Encountered rid 0x%X", obi_rsp_i.r.rid);
+                    $error("Encountered err at 0x%X", incoming_idx_q);
                 end else case(obi_rsp_i.r.rid)
-                    '0: begin
-                        $display("Read back %d %x ", incoming_idx_q, obi_rsp_i.r.rdata);
+                    'h0: begin
+                        $display("Read:  %x -> %x ", orders[incoming_idx_q].addr, obi_rsp_i.r.rdata);
                     end
-                    '1: begin
+                    'h1: begin
+                        $display("Wrote: %x -> %x", orders[incoming_idx_q].addr, orders[incoming_idx_q].value);
                     end
                     default: begin
                         $error("Encountered rid 0x%X at %d", obi_rsp_i.r.rid, incoming_idx_q);
@@ -103,7 +112,9 @@ module obi_manager#(
                 endcase
             end
         end else begin
-            done = '1;
+            if(obi_rsp_i.rvalid) begin
+                $error("Superflous response");
+            end
         end
     end
 

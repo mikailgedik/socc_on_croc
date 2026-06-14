@@ -18,9 +18,9 @@ module tb_socc_on_croc;
   logic       eoc;            // End of computation
   logic       clk;
   logic       rst_n;
-  logic enable;
   logic h_sync, v_sync;
   logic [7:0] color;
+  logic obi_done;
 
 
   
@@ -43,14 +43,17 @@ module tb_socc_on_croc;
   end
 
   //------------------ Design Under Test ------------------//
-  obi_tester #() i_dut (
+  obi_tester #(
+    .obi_stimuli_file("../stimuli/obi_stim.bin")
+  ) i_dut (
     .clk_obi_i (clk       ),
     .clk_vga_i (),
     .rst_ni    (rst_n     ),
     
     .hsync_o(h_sync),
     .vsync_o(v_sync),
-    .color_o(color)
+    .color_o(color),
+    .obi_done(obi_done)
   );
 
   initial begin : basic_test
@@ -59,18 +62,19 @@ module tb_socc_on_croc;
       $dumpvars(1,i_dut);
       $timeformat(-9, 2, " ns", 20);
       
-      enable = '0;
       // init_sram(RAM_INIT);
       // todo there's a weird glitch going on we hold reset down for only one cycle
       // before enabling ? See tb/tmp.sv
       @(posedge clk);
+
       #1;
-      enable = '1;
-      capture_image($sformatf("./output-%03x.bmp", 0));
-      capture_image($sformatf("./output-%03x.bmp", 1));
+      // capture_image($sformatf("./output-%03x.bmp", 0));
+      // capture_image($sformatf("./output-%03x.bmp", 1));
+
+      wait (obi_done == '1);
+
       // capture_image($sformatf("./output-%03x.bmp", 2));
       // capture_image($sformatf("./output-%03x.bmp", 3));
-      enable = '0;
       eoc = 1;
 
       // Finish recording the waveform
