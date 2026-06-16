@@ -78,6 +78,9 @@ module obi_manager#(
                 end else case(obi_rsp_i.r.rid)
                     'h0: begin
                         $display("Read:  %x -> %x ", get_obi_order(incoming_idx_q).addr, obi_rsp_i.r.rdata);
+                        if(1'((get_obi_order(incoming_idx_q).attr >> 27) & 32'b1) == 1'b1 && obi_rsp_i.r.rdata != get_obi_order(incoming_idx_q).value) begin
+                            $error("Read error at idx %x! Expected %x, got %x", incoming_idx_q, get_obi_order(incoming_idx_q).value, obi_rsp_i.r.rdata);
+                        end
                     end
                     'h1: begin
                         $display("Wrote: %x -> %x", get_obi_order(incoming_idx_q).addr, get_obi_order(incoming_idx_q).value);

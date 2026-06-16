@@ -6,7 +6,7 @@ module text_ram_wrapper#(
     input logic clk_i,
     input logic rst_ni,
 
-    input logic [ADDRESS_WIDTH-1:0] port0_addr_i,
+    input logic [ADDRESS_WIDTH:0] port0_char_index_i,
     output logic [7:0] port0_ascii_o,
     output logic [7:0] port0_color_blink_o,
 
@@ -16,16 +16,31 @@ module text_ram_wrapper#(
     input logic [DATA_WIDTH/8-1:0] port1_be_i,
     input logic port1_we_i
 );
+    `include "common_cells/registers.svh"
+
+    logic [ADDRESS_WIDTH-1:0] port0_addr;
+    logic lower_upper_d, lower_upper_q;
+    `FF(lower_upper_q, lower_upper_d, '0, clk_i, rst_ni)
+
+    always_comb begin : ascii_to_addr
+        assert(DATA_WIDTH == 32);
+        lower_upper_d = port0_char_index_i[0];
+        port0_addr = port0_char_index_i[ADDRESS_WIDTH:1];
+    end
+
+    assign port0_ascii_o = lower_upper_q == 'h0 ? rdata[0][7:0] : rdata[0][23:16];
+    assign port0_color_blink_o = lower_upper_q == 'h0 ? rdata[0][15:8] : rdata[0][31:24];
+    
     logic [1:0] we;
     logic [1:0][ADDRESS_WIDTH-1:0] addr;
     logic [1:0][DATA_WIDTH-1:0] wdata;
     logic [1:0][DATA_WIDTH/8-1:0] be;
     logic [1:0][DATA_WIDTH-1:0] rdata;
 
-    assign we = {1'h0, port1_we_i};
-    assign addr = {(ADDRESS_WIDTH)'(0), port1_addr_i};
-    assign wdata = {(DATA_WIDTH)'(0), port1_data_i};
-    assign be = {{(DATA_WIDTH/8){1'b1}}, port1_be_i};
+    assign we = {port1_we_i, 1'bZ};
+    assign addr = {port1_addr_i, port0_addr};
+    assign wdata = {port1_data_i, (DATA_WIDTH)'(0)};
+    assign be = {port1_be_i, {(DATA_WIDTH/8){1'b1}}};
     assign port1_data_o = rdata[1];
 
     // TODO tc_sram_impl vs tc_sram ?

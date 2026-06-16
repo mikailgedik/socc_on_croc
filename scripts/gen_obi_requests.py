@@ -8,19 +8,28 @@ Generates binary data for the OBI requests
 RAM_ADDR_WIDTH = 10 + 2
 
 class ObiR:
-    def __init__(self, addr: int, data: int, we: bool, mask: int = 0b1111):
+    def __init__(self, addr: int, data: int, we: bool, mask: int = 0b1111, check_read : bool = False):
         self.addr = addr
         self.data = data
         self.attr = (mask << 28)
+        self.attr |= (1 if check_read else 0) << 27
         self.attr |= (1 if we else 0)
+
 
 reqs : list[ObiR] = [
     ObiR(0x0, 0x04030201, True),
-    ObiR(0x0, 0x04030201, False),
+    ObiR(0x0, 0x04030201, False, check_read=True),
     ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0xfeeffaaf, True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0x0, False),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xfaaff00f, True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0x0, False),
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0xfeeffaaf, False, check_read=True),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xaaaaaaaa, True),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xbbbbbbbb, True, mask=0b0010),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xaaaabbaa, False, check_read=True),
+
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xeffeaffe, True),
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xeffeaffe, False, check_read=True),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x11111111, True),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x22222222, True, mask=0b0010),
+    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x11112211, False, check_read=True),
 ]
 
 for i in range(128):

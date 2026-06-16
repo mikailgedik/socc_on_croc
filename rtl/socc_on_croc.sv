@@ -55,7 +55,7 @@ module socc_on_croc  #(
     .clk_i(clk_i),
     .rst_ni(rst_ni),
 
-    .port0_addr_i(),
+    .port0_char_index_i(),
     .port0_ascii_o(),
     .port0_color_blink_o(),
 
@@ -69,7 +69,7 @@ module socc_on_croc  #(
   glyph_ram_wrapper #(
     .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
     .DATA_WIDTH(ObiCfg.DataWidth),
-    .MAX_GLYPH_DIMENSION_LOG(32'd4)
+    .GLYPH_DIMENSION_LOG(32'd4)
   ) i_glyph_ram (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
