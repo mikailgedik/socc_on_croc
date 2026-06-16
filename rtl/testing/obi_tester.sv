@@ -4,7 +4,6 @@
 `include "obi/typedef.svh"
 
 module obi_tester #(
-  parameter string obi_stimuli_file = ""
 ) (
     input logic clk_obi_i,
     input logic clk_vga_i,
@@ -63,8 +62,7 @@ module obi_tester #(
   obi_manager #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
-    .obi_rsp_t(obi_rsp_t),
-    .orders_file_name(obi_stimuli_file)
+    .obi_rsp_t(obi_rsp_t)
   ) manager (
     .clk_i(clk_obi_i),
     .rst_ni(rst_ni),

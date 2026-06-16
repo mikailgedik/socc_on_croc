@@ -22,8 +22,8 @@ packages:
     - common_cells
     - common_verification
   tech_cells_generic:
-    revision: 7968dd6e6180df2c644636bc6d2908a49f2190cf
-    version: 0.2.13
+    revision: fca524a1174f6363ba0e778f37b9f398257d4b8f
+    version: null
     source:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:

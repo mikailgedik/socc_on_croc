@@ -44,7 +44,6 @@ module tb_socc_on_croc;
 
   //------------------ Design Under Test ------------------//
   obi_tester #(
-    .obi_stimuli_file("../stimuli/obi_stim.bin")
   ) i_dut (
     .clk_obi_i (clk       ),
     .clk_vga_i (),
