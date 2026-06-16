@@ -1,5 +1,5 @@
 
-// Copyright 2026 ETH Zurich and University of Bologna.
+// Copyright 2026 ETH Zurich.
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
@@ -17,12 +17,12 @@ typedef struct packed {
 
 function obi_orders_t get_obi_order(logic [31:0] idx);
     case(idx)
-        'd0: get_obi_order = {32'd0, 32'd1, 32'd4026531841};
-		'd1: get_obi_order = {32'd4096, 32'd4277140143, 32'd4026531841};
-		'd2: get_obi_order = {32'd8192, 32'd4277140143, 32'd4026531841};
-		'd3: get_obi_order = {32'd0, 32'd0, 32'd4026531840};
-		'd4: get_obi_order = {32'd0, 32'd0, 32'd1342177281};
-		'd5: get_obi_order = {32'd0, 32'd0, 32'd4026531840};
+        'd0: get_obi_order = {32'd0, 32'd67305985, 32'd4026531841};
+		'd1: get_obi_order = {32'd0, 32'd67305985, 32'd4026531840};
+		'd2: get_obi_order = {32'd4096, 32'd4277140143, 32'd4026531841};
+		'd3: get_obi_order = {32'd4096, 32'd0, 32'd4026531840};
+		'd4: get_obi_order = {32'd8192, 32'd4205834255, 32'd4026531841};
+		'd5: get_obi_order = {32'd8192, 32'd0, 32'd4026531840};
 		'd6: get_obi_order = {32'd4096, 32'd65536, 32'd4026531841};
 		'd7: get_obi_order = {32'd4100, 32'd196610, 32'd4026531841};
 		'd8: get_obi_order = {32'd4104, 32'd327684, 32'd4026531841};

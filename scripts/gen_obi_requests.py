@@ -15,12 +15,12 @@ class ObiR:
         self.attr |= (1 if we else 0)
 
 reqs : list[ObiR] = [
-    ObiR(0x0, 0x1, True),
+    ObiR(0x0, 0x04030201, True),
+    ObiR(0x0, 0x04030201, False),
     ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0xfeeffaaf, True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xfeeffaaf, True),
-    ObiR(0x0, 0x0, False),
-    ObiR(0x0, 0x0, True, 0b0101),
-    ObiR(0x0, 0x0, False),
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0x0, False),
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xfaaff00f, True),
+    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0x0, False),
 ]
 
 for i in range(128):

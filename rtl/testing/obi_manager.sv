@@ -31,28 +31,30 @@ module obi_manager#(
         obi_req_o.a.be = '0;
         obi_req_o.a.wdata = '0;
         obi_req_o.a.aid = '0;
-        
         obi_req_o.req = '0;
-        if(outgoing_idx_q < MAX_OBI_ORDERS) begin
-            order = get_obi_order(outgoing_idx_q);
-            trx_type = (order.attr) & 32'hFF;
-            obi_req_o.a.addr = order.addr;
-            obi_req_o.a.be = 4'(order.attr >> 28);
-            obi_req_o.req = '1;
-            case (trx_type)
-                'h0: begin
-                    obi_req_o.a.we = '0;
-                    obi_req_o.a.aid = '0;
-                end
-                'h1: begin
-                    obi_req_o.a.we = '1;
-                    obi_req_o.a.wdata = order.value;
-                    obi_req_o.a.aid = '1;
-                end
-                default: begin
-                    $error("Encountered trx_type 0x%X at %d", trx_type, outgoing_idx_q);
-                end
-            endcase
+
+        if(rst_ni) begin
+            if(outgoing_idx_q < MAX_OBI_ORDERS) begin
+                order = get_obi_order(outgoing_idx_q);
+                trx_type = (order.attr) & 32'hFF;
+                obi_req_o.a.addr = order.addr;
+                obi_req_o.a.be = 4'(order.attr >> 28);
+                obi_req_o.req = '1;
+                case (trx_type)
+                    'h0: begin
+                        obi_req_o.a.we = '0;
+                        obi_req_o.a.aid = '0;
+                    end
+                    'h1: begin
+                        obi_req_o.a.we = '1;
+                        obi_req_o.a.wdata = order.value;
+                        obi_req_o.a.aid = '1;
+                    end
+                    default: begin
+                        $error("Encountered trx_type 0x%X at %d", trx_type, outgoing_idx_q);
+                    end
+                endcase
+            end
         end
     end
 

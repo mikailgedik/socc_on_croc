@@ -26,27 +26,25 @@ module tb_socc_on_croc;
   
   //------------------ Generate Clock and Reset Signals ------------------//
   initial begin
-    // Generating the clock
+    // Generating the clock and reset
+    rst_n = 1'b0;
+    clk = 1'b1;
+    #T_CLK_HI;
+    clk = 1'b0;
+    rst_n = 1'b1;
+    #T_CLK_LO;
     do begin
-      clk = 1'b1; #T_CLK_HI;
-      clk = 1'b0; #T_CLK_LO;
+      clk = 1'b1;
+      #T_CLK_HI;
+      clk = 1'b0;
+      #T_CLK_LO;
     end while (eoc == 1'b0);
-  end
-
-  initial begin
-    // Resetting the design for 1 cycle
-    rst_n     = 1'b0;
-    #(T_CLK);
-    // Release the reset
-    rst_n     = 1'b1;
-    #(T_CLK);
   end
 
   //------------------ Design Under Test ------------------//
   obi_tester #(
   ) i_dut (
-    .clk_obi_i (clk       ),
-    .clk_vga_i (),
+    .clk_i (clk       ),
     .rst_ni    (rst_n     ),
     
     .hsync_o(h_sync),

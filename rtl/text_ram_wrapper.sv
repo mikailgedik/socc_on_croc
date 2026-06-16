@@ -3,28 +3,51 @@ module text_ram_wrapper#(
     parameter int DATA_WIDTH = 32'd0
 ) (
     // TODO reset in sram?
-    input logic port0_clk_i,
+    input logic clk_i,
+    input logic rst_ni,
+
     input logic [ADDRESS_WIDTH-1:0] port0_addr_i,
     output logic [7:0] port0_ascii_o,
     output logic [7:0] port0_color_blink_o,
 
-    input logic port1_clk_i,
     input logic [ADDRESS_WIDTH-1:0] port1_addr_i,
-    // TODO should the RAM be readable from the OBI bus?
-    // output logic [DATA_WIDTH-1:0] port1_data_o,
+    output logic [DATA_WIDTH-1:0] port1_data_o,
     input logic [DATA_WIDTH-1:0] port1_data_i,
+    input logic [DATA_WIDTH/8-1:0] port1_be_i,
     input logic port1_we_i
 );
+    logic [1:0] we;
+    logic [1:0][ADDRESS_WIDTH-1:0] addr;
+    logic [1:0][DATA_WIDTH-1:0] wdata;
+    logic [1:0][DATA_WIDTH/8-1:0] be;
+    logic [1:0][DATA_WIDTH-1:0] rdata;
 
-    // for now, maybe use this: https://github.com/pulp-platform/croc/blob/main/ihp13/tc_sram_impl.sv, or directly
-    // https://github.com/IHP-GmbH/IHP-Open-PDK/blob/main/ihp-sg13g2/libs.ref/sg13g2_sram/verilog/RM_IHPSG13_2P_512x32_c2_bm_bist.v ?
+    assign we = {1'h0, port1_we_i};
+    assign addr = {(ADDRESS_WIDTH)'(0), port1_addr_i};
+    assign wdata = {(DATA_WIDTH)'(0), port1_data_i};
+    assign be = {{(DATA_WIDTH/8){1'b1}}, port1_be_i};
+    assign port1_data_o = rdata[1];
 
-    logic [DATA_WIDTH-1:0] wweeeeeeee [(1 << ADDRESS_WIDTH)-1:0];
+    // TODO tc_sram_impl vs tc_sram ?
+    tc_sram_impl #(
+        .NumWords  ( 1 << ADDRESS_WIDTH ),
+        .DataWidth ( DATA_WIDTH ),
+        .NumPorts  (  2 ),
+        .Latency   (  1 )
+    ) i_sram (
+        .clk_i(clk_i),
+        .rst_ni(rst_ni),
 
-    always_ff @(posedge port1_clk_i) begin
-        if(port1_we_i) begin
-            wweeeeeeee[port1_addr_i] <= port1_data_i;
-        end
-    end
+        .impl_i(),
+        .impl_o(),
+        // TODO are we allowed to pull this to high all the time?
+        .req_i({1'd1, 1'd1}),
+        .we_i(we),
+        .addr_i(addr),
+
+        .wdata_i(wdata),
+        .be_i(be),
+        .rdata_o(rdata)
+    );
 
 endmodule

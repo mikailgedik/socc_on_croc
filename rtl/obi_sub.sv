@@ -20,9 +20,10 @@ module obi_sub#(
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
-  // input  logic[1:0][ObiCfg.DataWidth-1:0] ram_data_i,
+  output logic[(ObiCfg.DataWidth/8)-1:0] ram_be_o,
+  input  logic[1:0][ObiCfg.DataWidth-1:0] ram_data_i,
   output logic ram_we_o,
-  output logic ram_selector
+  output logic ram_selector_o
 );
 
   // /// OBI Xbar -> Subordinate address channel
@@ -64,28 +65,33 @@ module obi_sub#(
   `FF(rvalid_q, rvalid_d, 'b0, clk_i, rst_ni);
   logic err_d, err_q;
   `FF(err_q, err_d, 'b0, clk_i, rst_ni);
-  logic [ObiCfg.DataWidth-1:0] rdata_d, rdata_q;
-  `FF(rdata_q, rdata_d, 'b0, clk_i, rst_ni);
-
+  logic [ObiCfg.DataWidth-1:0] read_config_d, read_config_q;
+  `FF(read_config_q, read_config_d, 'b0, clk_i, rst_ni);
+  logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] rdata_src_d, rdata_src_q;
+  `FF(rdata_src_q, rdata_src_d, 'b0, clk_i, rst_ni);
+  
   always_comb begin : obi_communication
     logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] destination_selector;
     logic [RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1 - DATAWIDTH_CLOG:0] dest_addr;
     logic [DATAWIDTH_CLOG-1:0] lower_bits;
-    config_d = config_q;
-
-    rid_d = obi_req_i.a.aid;
-    rvalid_d = obi_req_i.req & obi_rsp_o.gnt;
-    err_d = '0;
-    rdata_d = 'hdeadbeef;
-
-    ram_addr_o = '0;
-    ram_data_o = '0;
-    ram_we_o = '0;
-    ram_selector = '0;
 
     destination_selector = obi_req_i.a.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
     dest_addr = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
     lower_bits = obi_req_i.a.addr[DATAWIDTH_CLOG-1:0];
+
+    config_d = config_q;
+    rdata_src_d = destination_selector;
+
+    rid_d = obi_req_i.a.aid;
+    rvalid_d = obi_req_i.req & obi_rsp_o.gnt;
+    err_d = '0;
+    read_config_d = 'hdeadbeef;
+
+    ram_addr_o = '0;
+    ram_data_o = '0;
+    ram_be_o = '0;
+    ram_we_o = '0;
+
     if (lower_bits != '0) begin
       // Force all read/writes to be aligned to the bus width
       // after that, lower addr bits can be discarded
@@ -94,7 +100,7 @@ module obi_sub#(
     end else if (destination_selector == 'h0) begin
       case (dest_addr)
         'h0: begin
-          rdata_d = config_q;
+          read_config_d = config_q;
           if(obi_req_i.a.we) begin
             for(int b = 0; b < ObiCfg.DataWidth/8; b++) begin
               if (obi_req_i.a.be[b] == '1) begin
@@ -105,20 +111,20 @@ module obi_sub#(
         end
         default: begin
           err_d = '1;
-          rdata_d = 'hdeadbeef;
+          read_config_d = 'hdeadbeef;
         end
       endcase
     end else begin
       ram_addr_o = dest_addr;
       ram_we_o = obi_req_i.a.we;
       if (obi_req_i.a.we == '0) begin
-        err_d = '1; // TODO no reading yet - maybe later?
-        rdata_d = 'hdeadbeef;
+        // Nothing to do - reading is done autmatically
       end else begin
         ram_data_o = obi_req_i.a.wdata;
+        ram_be_o = obi_req_i.a.be;
         case (destination_selector)
-          'h1: ram_selector = '0;
-          'h2: ram_selector = '1;
+          'h1: ram_selector_o = 1'd0;
+          'h2: ram_selector_o = 1'd1;
           default: begin
             err_d = '1;
             ram_we_o = '0;
@@ -130,7 +136,7 @@ module obi_sub#(
 
   assign conf0_o = config_q;
 
-  assign obi_rsp_o.r.rdata = rdata_q;
+  assign obi_rsp_o.r.rdata = rdata_src_q == 'h0 ? read_config_q : (rdata_src_q == 'h1 ? ram_data_i[0]: ram_data_i[1]);
   assign obi_rsp_o.r.rid = rid_q;
   assign obi_rsp_o.r.err = err_q;
   // assign obi_rsp_o.r.r_option = ; // TODO is this one needed? See OBI definition in croc soc

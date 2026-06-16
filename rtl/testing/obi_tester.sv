@@ -5,8 +5,7 @@
 
 module obi_tester #(
 ) (
-    input logic clk_obi_i,
-    input logic clk_vga_i,
+    input logic clk_i,
     input logic rst_ni,
 
     output logic vsync_o,
@@ -48,8 +47,7 @@ module obi_tester #(
     .obi_req_t(obi_req_t),
     .obi_rsp_t(obi_rsp_t)
   ) socc (
-    .clk_obi_i (clk_obi_i),
-    .clk_vga_i (clk_vga_i),
+    .clk_i (clk_i),
     .rst_ni    (rst_ni),
 
     .obi_req_i(obi_req),
@@ -64,7 +62,7 @@ module obi_tester #(
     .obi_req_t(obi_req_t),
     .obi_rsp_t(obi_rsp_t)
   ) manager (
-    .clk_i(clk_obi_i),
+    .clk_i(clk_i),
     .rst_ni(rst_ni),
 
     .obi_req_o(obi_req),
