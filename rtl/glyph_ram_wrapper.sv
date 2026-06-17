@@ -1,18 +1,17 @@
 module glyph_ram_wrapper#(
     parameter int ADDRESS_WIDTH = 32'd0,
     parameter int DATA_WIDTH = 32'd0,
-    parameter int GLYPH_DIMENSION_LOG = 32'd3, // = clog2(glyph_height) = clog2(glyph_width)
+    parameter int GLYPH_WIDTH_LOG = 3,
+    parameter int GLYPH_HEIGHT_LOG = 3,
     // derived parameters
-    parameter int GLYPH_WIDTH_LOG = GLYPH_DIMENSION_LOG,
-    parameter int GLYPH_HEIGHT_LOG = GLYPH_DIMENSION_LOG,
     parameter int BITS_PER_GLYPH = (1 << GLYPH_WIDTH_LOG) * (1 << GLYPH_HEIGHT_LOG)
 ) (
     // TODO reset in sram?
     input logic clk_i,
     input logic rst_ni,
     input logic [7:0] port0_ascii_i,
-    input logic [GLYPH_DIMENSION_LOG-1:0] port0_x_i,
-    input logic [GLYPH_DIMENSION_LOG-1:0] port0_y_i,
+    input logic [GLYPH_WIDTH_LOG-1:0] port0_x_i,
+    input logic [GLYPH_HEIGHT_LOG-1:0] port0_y_i,
     output logic port0_pixel_o,
 
     input logic [ADDRESS_WIDTH-1:0] port1_addr_i,
@@ -40,7 +39,7 @@ module glyph_ram_wrapper#(
         port0_addr = bit_address[BIT_ADDRESS_WIDTH-1:$clog2(DATA_WIDTH)];
     end
 
-    assign port0_pixel_o = rdata[0][bit_shift_d];
+    assign port0_pixel_o = rdata[0][bit_shift_q];
 
     logic [1:0] we;
     logic [1:0][ADDRESS_WIDTH-1:0] addr;

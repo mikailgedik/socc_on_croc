@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 import sys
 import os
+import random
 """
 Generates binary data for the OBI requests
 """
 
 RAM_ADDR_WIDTH = 10 + 2
+
+BASE_ADDR_TEXT = (1 << RAM_ADDR_WIDTH)
+BASE_ADDR_GLYPH = (1 << RAM_ADDR_WIDTH) * 2
+
 
 class ObiR:
     def __init__(self, addr: int, data: int, we: bool, mask: int = 0b1111, check_read : bool = False):
@@ -19,21 +24,46 @@ class ObiR:
 reqs : list[ObiR] = [
     ObiR(0x0, 0x04030201, True),
     ObiR(0x0, 0x04030201, False, check_read=True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0xfeeffaaf, True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 1, 0xfeeffaaf, False, check_read=True),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xaaaaaaaa, True),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xbbbbbbbb, True, mask=0b0010),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 1, 0xaaaabbaa, False, check_read=True),
+    ObiR(0x0 + BASE_ADDR_TEXT, 0xfeeffaaf, True),
+    ObiR(0x0 + BASE_ADDR_TEXT, 0xfeeffaaf, False, check_read=True),
+    ObiR(0x4 + BASE_ADDR_TEXT, 0xaaaaaaaa, True),
+    ObiR(0x4 + BASE_ADDR_TEXT, 0xbbbbbbbb, True, mask=0b0010),
+    ObiR(0x4 + BASE_ADDR_TEXT, 0xaaaabbaa, False, check_read=True),
 
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xeffeaffe, True),
-    ObiR(0x0 + (1 << RAM_ADDR_WIDTH) * 2, 0xeffeaffe, False, check_read=True),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x11111111, True),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x22222222, True, mask=0b0010),
-    ObiR(0x4 + (1 << RAM_ADDR_WIDTH) * 2, 0x11112211, False, check_read=True),
+    # Test read/write capabilities
+    ObiR(0x0 + BASE_ADDR_GLYPH, 0xeffeaffe, True),
+    ObiR(0x0 + BASE_ADDR_GLYPH, 0xeffeaffe, False, check_read=True),
+    ObiR(0x4 + BASE_ADDR_GLYPH, 0x11111111, True),
+    ObiR(0x4 + BASE_ADDR_GLYPH, 0x22222222, True, mask=0b0010),
+    ObiR(0x4 + BASE_ADDR_GLYPH, 0x11112211, False, check_read=True),
 ]
 
-for i in range(128):
-    reqs.append(ObiR(4*i + (1 << RAM_ADDR_WIDTH) * 1, (2 * i) | ((2 * i + 1) << 16), True))
+r = random.Random(0)
+for i in range(80 * 25):
+    bg_col_idx = r.randrange(8) & 0b111
+    fg_col_idx = r.randrange(16) & 0b1111
+    c = ((bg_col_idx & 0b111) << 4) | (fg_col_idx & 0b1111)
+    print("Bg: ", bg_col_idx, "Fg: ", fg_col_idx)
+    c = c << 8
+    c |= i % 256
+    reqs.append(ObiR(4*(i//2) + BASE_ADDR_TEXT, c if i % 2 == 0 else (c << 16), True, mask=(0b0011 if i%2 == 0 else 0b1100)))
+
+with open("../res/font/raw.bin", "rb") as f:
+    data = f.read()
+    assert len(data) % 4 == 0
+    for i in range(len(data) // 4):
+        reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, int.from_bytes(data[4*i:4*i+4], byteorder='little'), True))
+
+reqs.append(ObiR(0x0 + BASE_ADDR_GLYPH, 0x818181FF, True))
+reqs.append(ObiR(0x4 + BASE_ADDR_GLYPH, 0x81818181, True))
+reqs.append(ObiR(0x8 + BASE_ADDR_GLYPH, 0x81818181, True))
+reqs.append(ObiR(0xC + BASE_ADDR_GLYPH, 0xFF818181, True))
+
+reqs.append(ObiR(0x10 + BASE_ADDR_GLYPH, 0x0F0F0F0F, True))
+reqs.append(ObiR(0x14 + BASE_ADDR_GLYPH, 0x0F0F0F0F, True))
+reqs.append(ObiR(0x18 + BASE_ADDR_GLYPH, 0xF0F0F0F0, True))
+reqs.append(ObiR(0x1C + BASE_ADDR_GLYPH, 0xF0F0F0F0, True))
+
 
 FILE_CONTENT = """
 // Copyright 2026 ETH Zurich.

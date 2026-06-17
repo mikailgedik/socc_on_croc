@@ -3092,7 +3092,7 @@ always_comb begin
         8'h8E: begin // Char: 'LATIN CAPITAL LETTER A WITH DIAERESIS'
             unique case (row)
                 4'd0: font_data = 8'b11000110;
-                4'd1: font_data = 8'b00000000;
+                4'd1: font_data = 8'b11000110;
                 4'd2: font_data = 8'b00010000;
                 4'd3: font_data = 8'b00111000;
                 4'd4: font_data = 8'b01111100;

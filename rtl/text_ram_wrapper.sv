@@ -5,7 +5,8 @@ module text_ram_wrapper#(
     // TODO reset in sram?
     input logic clk_i,
     input logic rst_ni,
-
+    
+    // Since every character is two bytes, the index has a bit more
     input logic [ADDRESS_WIDTH:0] port0_char_index_i,
     output logic [7:0] port0_ascii_o,
     output logic [7:0] port0_color_blink_o,

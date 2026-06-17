@@ -4,7 +4,22 @@
 module socc_on_croc  #(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
-  parameter type obi_rsp_t = logic
+  parameter type obi_rsp_t = logic,
+
+  // Horizontal timing parameters (in pixels)
+  parameter int H_ACTIVE = 640,       // Display width
+  parameter int H_BACK_PORCH = 48,    // Left border
+  parameter int H_FRONT_PORCH = 16,   // Right border
+  parameter int H_SYNC_WIDTH = 96,    // Sync pulse width
+
+  // Vertical timing parameters (in lines)
+  parameter int V_ACTIVE = 480,       // Display height
+  parameter int V_BACK_PORCH = 33,    // Top border
+  parameter int V_FRONT_PORCH = 10,   // Bottom border
+  parameter int V_SYNC_WIDTH = 2,     // Sync pulse width (in lines)
+
+  parameter int GLYPH_WIDTH_LOG = 3,
+  parameter int GLYPH_HEIGHT_LOG = 4
 ) (
   // clk_vga must be a multiple of clk_obi, or clk_obi
   input logic clk_i,
@@ -16,8 +31,50 @@ module socc_on_croc  #(
   output logic vsync_o,
   output logic [7:0] color_o
 );
+  `include "common_cells/registers.svh"
 
   localparam int RAM_ADDR_WIDTH = 'd10;
+
+  localparam COUNTER_WIDTH = 10;
+  logic hsync_unbuffered, vsync_unbuffered, output_visible_unbuffered;
+  logic [COUNTER_WIDTH-1:0] screen_x, screen_y;
+  
+  sync_generator #(
+    .COUNTER_WIDTH(COUNTER_WIDTH),
+
+    .H_ACTIVE(H_ACTIVE),
+    .H_BACK_PORCH(H_BACK_PORCH),
+    .H_FRONT_PORCH(H_FRONT_PORCH),
+    .H_SYNC_WIDTH(H_SYNC_WIDTH),
+
+    .V_ACTIVE(V_ACTIVE),
+    .V_BACK_PORCH(V_BACK_PORCH),
+    .V_FRONT_PORCH(V_FRONT_PORCH),
+    .V_SYNC_WIDTH(V_SYNC_WIDTH)
+  ) i_sync_generator (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+    .clk_enable_i('1),
+
+    .hsync_o(hsync_unbuffered),
+    .vsync_o(vsync_unbuffered),
+    .visible_o(output_visible_unbuffered),
+    .hpos_o(screen_x),
+    .vpos_o(screen_y)
+  );
+
+  logic [RAM_ADDR_WIDTH:0] character_index;
+  address_generator #(
+    .COUNTER_WIDTH(COUNTER_WIDTH),
+    .GLYPH_WIDTH_BITS(1 << GLYPH_WIDTH_LOG),
+    .GLYPH_HEIGHT_BITS(1 << GLYPH_HEIGHT_LOG),
+    .PIXELS_PER_ROW(V_ACTIVE),
+    .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH)
+  ) i_address_generator (
+    .screen_x(screen_x),
+    .screen_y(screen_y),
+    .character_index_o(character_index)
+  );
 
   logic [RAM_ADDR_WIDTH-1:0] ram_addr;
   logic [ObiCfg.DataWidth-1:0] ram_data;
@@ -48,6 +105,9 @@ module socc_on_croc  #(
     .ram_selector_o(ram_selector)
   );
 
+  logic [7:0] ascii_char;
+  logic [7:0] color_blink;
+
   text_ram_wrapper #(
     .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
     .DATA_WIDTH(ObiCfg.DataWidth)
@@ -55,9 +115,9 @@ module socc_on_croc  #(
     .clk_i(clk_i),
     .rst_ni(rst_ni),
 
-    .port0_char_index_i(),
-    .port0_ascii_o(),
-    .port0_color_blink_o(),
+    .port0_char_index_i(character_index),
+    .port0_ascii_o(ascii_char),
+    .port0_color_blink_o(color_blink),
 
     .port1_addr_i(ram_addr),
     .port1_data_o(ram_data_output[0]),
@@ -66,18 +126,26 @@ module socc_on_croc  #(
     .port1_we_i(ram_we && (ram_selector == 'd0))
   );
 
+  logic one_bit_pixel;
+  // Delayed by one clk cylce, since text RAM adds 1 latency
+  logic [GLYPH_WIDTH_LOG-1:0] glyph_x;
+  logic [GLYPH_HEIGHT_LOG-1:0] glyph_y;
+  `FF(glyph_x, screen_x[GLYPH_WIDTH_LOG-1:0], 'h0, clk_i, rst_ni);
+  `FF(glyph_y, screen_y[GLYPH_HEIGHT_LOG-1:0], 'h0, clk_i, rst_ni);
+
   glyph_ram_wrapper #(
     .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
     .DATA_WIDTH(ObiCfg.DataWidth),
-    .GLYPH_DIMENSION_LOG(32'd4)
+    .GLYPH_WIDTH_LOG(GLYPH_WIDTH_LOG),
+    .GLYPH_HEIGHT_LOG(GLYPH_HEIGHT_LOG)
   ) i_glyph_ram (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
     
-    .port0_ascii_i(),
-    .port0_x_i(),
-    .port0_y_i(),
-    .port0_pixel_o(),
+    .port0_ascii_i(ascii_char),
+    .port0_x_i(glyph_x),
+    .port0_y_i(glyph_y),
+    .port0_pixel_o(one_bit_pixel),
 
     .port1_addr_i(ram_addr),
     .port1_data_o(ram_data_output[1]),
@@ -85,4 +153,35 @@ module socc_on_croc  #(
     .port1_be_i(ram_be),
     .port1_we_i(ram_we && (ram_selector == 'd1))
   );
+
+  logic [7:0] color_blink_delayed;
+  `FF(color_blink_delayed, color_blink, '0, clk_i, rst_ni)
+  logic [7:0] color;
+  color_generator #(
+  ) i_color_generator (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+    .input_pixel_i(one_bit_pixel),
+    .color_blink_i(color_blink_delayed),
+    .color_palette_i(
+      '{
+        // TODO sensible default colors...?
+        8'b0000_0000, // black
+        8'b1110_0000,8'b0001_1100,8'b0000_0011, // full colors
+        8'b0110_0000,8'b0000_1100,8'b0000_0001, // dim colors
+        8'b1111_1100,8'b1110_0011,8'b0001_1111, // full 2-col mixes
+        8'b1001_0010,8'b0100_0101,8'b0110_1101, // dim 2-col mixes
+        8'b0110_1101,8'b0010_0101,8'b1111_1111  // gray & white
+      }),
+    .color_o(color)
+  );
+
+  logic [1:0][2:0] hvsync_delayed;
+
+  `FF(hvsync_delayed[0], {output_visible_unbuffered, hsync_unbuffered, vsync_unbuffered}, '0, clk_i, rst_ni);
+  `FF(hvsync_delayed[1], hvsync_delayed[0], '0, clk_i, rst_ni);
+
+  assign hsync_o = hvsync_delayed[1][1];
+  assign vsync_o = hvsync_delayed[1][0];
+  assign color_o = color & {8{hvsync_delayed[1][2]}};
 endmodule

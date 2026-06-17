@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import math
 import os
@@ -47,7 +49,7 @@ def ttf_to_cp437_binary(font_path, output_path, font_size, grid_w, grid_h, offse
     print(f"Wrote binary font file '{output_path}' containing {len(chars)} CP437 characters.")
 
 
-def convert_binary_to_sv(input_txt, output_sv, module_name="font_rom"):
+def convert_binary_to_sv(input_txt, output_sv, module_name="font_rom", raw_binary_out=None):
     """
     Parse an existing text-based binary font file and generate a SystemVerilog ROM module.
     """
@@ -105,6 +107,8 @@ def convert_binary_to_sv(input_txt, output_sv, module_name="font_rom"):
     max_height = max(len(d["data"]) for d in font_data.values())
     row_bits = max(1, math.ceil(math.log2(max_height)))
     row_width = max(len(row) for d in font_data.values() for row in d["data"])
+    
+    bytes_raw = bytearray()
 
     with open(output_sv, "w", encoding="utf-8") as f:
         f.write(f"module {module_name} (\n")
@@ -124,7 +128,12 @@ def convert_binary_to_sv(input_txt, output_sv, module_name="font_rom"):
 
             for i, row_str in enumerate(info["data"]):
                 f.write(f"                {row_bits}'d{i}: font_data = {row_width}'b{row_str};\n")
-
+                raw_byte = int(row_str, 2)
+                raw_byte_reversed : int = 0
+                for k in range(8):
+                    raw_byte_reversed = raw_byte_reversed << 1
+                    raw_byte_reversed |= ((raw_byte >> k) & 1)
+                bytes_raw.extend(raw_byte_reversed.to_bytes(1, byteorder='little'))
             f.write(f"                default: font_data = {row_width}'b" + "0" * row_width + ";\n")
             f.write("            endcase\n")
             f.write("        end\n\n")
@@ -134,6 +143,9 @@ def convert_binary_to_sv(input_txt, output_sv, module_name="font_rom"):
         f.write("end\n\n")
         f.write("endmodule\n")
 
+    if not raw_binary_out is None:
+        with open(raw_binary_out, "wb") as f:
+            f.write(bytes_raw)
     print(f"Successfully generated SystemVerilog ROM '{output_sv}' containing {len(font_data)} characters.")
 
 
@@ -146,6 +158,7 @@ def ttf_to_svrom(
     offset,
     module_name,
     binary_out=None,
+    raw_binary_out=None,
 ):
     """
     Convert a TTF font directly into a SystemVerilog ROM using the CP437 mapping.
@@ -159,7 +172,7 @@ def ttf_to_svrom(
             temp_binary = binary_out
 
         ttf_to_cp437_binary(font_path, binary_out, font_size, grid_w, grid_h, offset)
-        convert_binary_to_sv(binary_out, output_sv, module_name)
+        convert_binary_to_sv(binary_out, output_sv, module_name, raw_binary_out)
     finally:
         if temp_binary is not None and os.path.exists(temp_binary):
             os.remove(temp_binary)
@@ -200,6 +213,11 @@ def main():
         default=None,
         help="Optional intermediate binary font file path to keep.",
     )
+    parser.add_argument(
+        "--raw-binary-out",
+        default=None,
+        help="Output the values which end up in the system verilog output also this file (bit-reversed).",
+    )
 
     args = parser.parse_args()
     ttf_to_svrom(
@@ -211,6 +229,7 @@ def main():
         offset=args.offset,
         module_name=args.module_name,
         binary_out=args.binary_out,
+        raw_binary_out=args.raw_binary_out
     )
 
 
