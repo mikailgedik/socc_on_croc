@@ -15,16 +15,16 @@ module top(
     logic [15:0] enable_cnt_q, enable_cnt_d;
 
     logic h_sync, v_sync;
-    logic [23:0] color;
+    logic [7:0] color;
     
-    socc_with_rom #() i_dut (
+    obi_tester #() i_dut (
         .clk_i     (clk1       ),
         .rst_ni    (rst1_n     ),
-        .enable_i(enable_q),
         
         .hsync_o(h_sync),
         .vsync_o(v_sync),
-        .color_o(color)
+        .color_o(color),
+        .obi_done()
     );
 
     plle2_adv i_pll (
@@ -53,14 +53,14 @@ module top(
     assign je[0] = h_sync;
     assign je[1] = v_sync;
 
-    assign je[4] = color[14]; // g
-    assign je[5] = color[15];
+    assign je[4] = color[3]; // g
+    assign je[5] = color[4];
 
-    assign je[2] = color[6]; // b
-    assign je[6] = color[7];
+    assign je[2] = color[0]; // b
+    assign je[6] = color[1];
 
-    assign je[3] = color[22]; // r
-    assign je[7] = color[23];
+    assign je[3] = color[6]; // r
+    assign je[7] = color[7];
 
     always_comb begin : enable_debounce
         enable_d = enable_q;
