@@ -5,6 +5,7 @@ module socc_on_croc  #(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
+  parameter bit[ObiCfg.AddrWidth-1:0] OBI_ADDRESS_OFFSET = '0,
 
   // Horizontal timing parameters (in pixels)
   parameter int H_ACTIVE = 640,       // Display width
@@ -87,7 +88,8 @@ module socc_on_croc  #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
     .obi_rsp_t(obi_rsp_t),
-    .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH)
+    .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH),
+    .OBI_ADDRESS_OFFSET(OBI_ADDRESS_OFFSET)
   ) i_obi_sub(
     .clk_i(clk_i),
     .rst_ni(rst_ni),

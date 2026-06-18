@@ -5,7 +5,7 @@ module obi_sub#(
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
   parameter int RAM_ADDR_WIDTH = 'h0,
-
+  parameter bit [ObiCfg.AddrWidth-1:0] OBI_ADDRESS_OFFSET = '0,
   // Derived parameter, do not overwrite!
   parameter int DATAWIDTH_CLOG = $clog2(ObiCfg.DataWidth/8) //The lower bits must be 0 (every write/read must be aligned with ObiCfg.DataWidth/8)
 ) (
@@ -74,10 +74,13 @@ module obi_sub#(
     logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] destination_selector;
     logic [RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1 - DATAWIDTH_CLOG:0] dest_addr;
     logic [DATAWIDTH_CLOG-1:0] lower_bits;
+    logic [ObiCfg.AddrWidth-1:0] normalized_address;
 
-    destination_selector = obi_req_i.a.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
-    dest_addr = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
-    lower_bits = obi_req_i.a.addr[DATAWIDTH_CLOG-1:0];
+    normalized_address = obi_req_i.a.addr - OBI_ADDRESS_OFFSET;
+
+    destination_selector = normalized_address[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
+    dest_addr = normalized_address[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
+    lower_bits = normalized_address[DATAWIDTH_CLOG-1:0];
 
     config_d = config_q;
     rdata_src_d = destination_selector;
