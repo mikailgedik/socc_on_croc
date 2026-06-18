@@ -39,13 +39,14 @@ module glyph_ram_wrapper#(
         port0_addr = bit_address[BIT_ADDRESS_WIDTH-1:$clog2(DATA_WIDTH)];
     end
 
-    assign port0_pixel_o = rdata[0][bit_shift_q];
 
     logic [1:0] we;
     logic [1:0][ADDRESS_WIDTH-1:0] addr;
     logic [1:0][DATA_WIDTH-1:0] wdata;
     logic [1:0][DATA_WIDTH/8-1:0] be;
     logic [1:0][DATA_WIDTH-1:0] rdata;
+
+    assign port0_pixel_o = rdata[0][bit_shift_q];
 
     assign we = {port1_we_i, 1'bZ};
     assign addr = {port1_addr_i, port0_addr};

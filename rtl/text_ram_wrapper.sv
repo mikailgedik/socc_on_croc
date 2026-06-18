@@ -29,14 +29,15 @@ module text_ram_wrapper#(
         port0_addr = port0_char_index_i[ADDRESS_WIDTH:1];
     end
 
-    assign port0_ascii_o = lower_upper_q == 'h0 ? rdata[0][7:0] : rdata[0][23:16];
-    assign port0_color_blink_o = lower_upper_q == 'h0 ? rdata[0][15:8] : rdata[0][31:24];
     
     logic [1:0] we;
     logic [1:0][ADDRESS_WIDTH-1:0] addr;
     logic [1:0][DATA_WIDTH-1:0] wdata;
     logic [1:0][DATA_WIDTH/8-1:0] be;
     logic [1:0][DATA_WIDTH-1:0] rdata;
+
+    assign port0_ascii_o = lower_upper_q == 'h0 ? rdata[0][7:0] : rdata[0][23:16];
+    assign port0_color_blink_o = lower_upper_q == 'h0 ? rdata[0][15:8] : rdata[0][31:24];
 
     assign we = {port1_we_i, 1'bZ};
     assign addr = {port1_addr_i, port0_addr};

@@ -51,7 +51,9 @@ module obi_manager#(
                         obi_req_o.a.aid = '1;
                     end
                     default: begin
-                        $error("Encountered trx_type 0x%X at %d", trx_type, outgoing_idx_q);
+                        `ifdef VERILATOR
+                            $error("Encountered trx_type 0x%X at %d", trx_type, outgoing_idx_q);
+                        `endif
                     end
                 endcase
             end
@@ -70,6 +72,7 @@ module obi_manager#(
         end
     end
 
+    `ifdef VERILATOR
     always_ff @( posedge clk_i ) begin : debug_printer
         if(incoming_idx_q < MAX_OBI_ORDERS) begin
             if(obi_rsp_i.rvalid == '1) begin
@@ -96,5 +99,6 @@ module obi_manager#(
             end
         end
     end
+    `endif
 
 endmodule

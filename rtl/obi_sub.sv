@@ -91,12 +91,15 @@ module obi_sub#(
     ram_data_o = '0;
     ram_be_o = '0;
     ram_we_o = '0;
+    ram_selector_o = '0;
 
     if (lower_bits != '0) begin
       // Force all read/writes to be aligned to the bus width
       // after that, lower addr bits can be discarded
       err_d = '1;
-      $error("Lower bits should not be set!");
+      `ifdef VERILATOR
+        $error("Lower bits should not be set!");
+      `endif
     end else if (destination_selector == 'h0) begin
       case (dest_addr)
         'h0: begin
