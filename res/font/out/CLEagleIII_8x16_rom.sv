@@ -229,6 +229,28 @@ always_comb begin
             endcase
         end
 
+        8'h0A: begin // Char: 'REVERSE SOLIDUS'
+            unique case (row)
+                4'd0: font_data = 8'b00000000;
+                4'd1: font_data = 8'b00000000;
+                4'd2: font_data = 8'b00000000;
+                4'd3: font_data = 8'b00000000;
+                4'd4: font_data = 8'b00000000;
+                4'd5: font_data = 8'b00000000;
+                4'd6: font_data = 8'b00000000;
+                4'd7: font_data = 8'b00000000;
+                4'd8: font_data = 8'b00000000;
+                4'd9: font_data = 8'b00000000;
+                4'd10: font_data = 8'b00000000;
+                4'd11: font_data = 8'b00000000;
+                4'd12: font_data = 8'b00000000;
+                4'd13: font_data = 8'b00000000;
+                4'd14: font_data = 8'b00000000;
+                4'd15: font_data = 8'b00000000;
+                default: font_data = 8'b00000000;
+            endcase
+        end
+
         8'h0B: begin // Char: 'UNKNOWN_CHAR_11'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
@@ -265,6 +287,28 @@ always_comb begin
                 4'd9: font_data = 8'b01111110;
                 4'd10: font_data = 8'b00011000;
                 4'd11: font_data = 8'b00011000;
+                4'd12: font_data = 8'b00000000;
+                4'd13: font_data = 8'b00000000;
+                4'd14: font_data = 8'b00000000;
+                4'd15: font_data = 8'b00000000;
+                default: font_data = 8'b00000000;
+            endcase
+        end
+
+        8'h0D: begin // Char: 'REVERSE SOLIDUS'
+            unique case (row)
+                4'd0: font_data = 8'b00000000;
+                4'd1: font_data = 8'b00000000;
+                4'd2: font_data = 8'b00111111;
+                4'd3: font_data = 8'b00110011;
+                4'd4: font_data = 8'b00110011;
+                4'd5: font_data = 8'b00111111;
+                4'd6: font_data = 8'b00110000;
+                4'd7: font_data = 8'b00110000;
+                4'd8: font_data = 8'b00110000;
+                4'd9: font_data = 8'b01110000;
+                4'd10: font_data = 8'b11110000;
+                4'd11: font_data = 8'b11100000;
                 4'd12: font_data = 8'b00000000;
                 4'd13: font_data = 8'b00000000;
                 4'd14: font_data = 8'b00000000;
@@ -3092,7 +3136,7 @@ always_comb begin
         8'h8E: begin // Char: 'LATIN CAPITAL LETTER A WITH DIAERESIS'
             unique case (row)
                 4'd0: font_data = 8'b11000110;
-                4'd1: font_data = 8'b11000110;
+                4'd1: font_data = 8'b00000000;
                 4'd2: font_data = 8'b00010000;
                 4'd3: font_data = 8'b00111000;
                 4'd4: font_data = 8'b01111100;

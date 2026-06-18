@@ -38,7 +38,8 @@ def ttf_to_cp437_binary(font_path, output_path, font_size, grid_w, grid_h, offse
             draw.text(offset, char, font=font, fill=255)
 
             hex_val = f"0x{byte_val:02X}"
-            out_file.write(f"CP437: {hex_val} | Dec: {byte_val:<3} | Char: '{char}' | Size: {grid_w}x{grid_h}\n")
+            safe_char = char.replace("\n", "\\n").replace("\r", "\\r")
+            out_file.write(f"CP437: {hex_val} | Dec: {byte_val:<3} | Char: '{safe_char}' | Size: {grid_w}x{grid_h}\n")
 
             for y in range(grid_h):
                 row_bits = ["1" if img.getpixel((x, y)) > 0 else "0" for x in range(grid_w)]
