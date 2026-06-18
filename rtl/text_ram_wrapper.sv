@@ -24,7 +24,9 @@ module text_ram_wrapper#(
     `FF(lower_upper_q, lower_upper_d, '0, clk_i, rst_ni)
 
     always_comb begin : ascii_to_addr
-        assert(DATA_WIDTH == 32);
+        `ifdef VERILATOR
+            assert(DATA_WIDTH == 32);
+        `endif
         lower_upper_d = port0_char_index_i[0];
         port0_addr = port0_char_index_i[ADDRESS_WIDTH:1];
     end

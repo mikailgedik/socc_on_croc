@@ -1,5 +1,5 @@
-DB_DIR ?= /nextpnr-xilinx/xilinx/external/prjxray-db
-CHIPDB ?= /chipdb
+DB_DIR ?= ${CURDIR}/xilinx/external/prjxray-db
+CHIPDB ?= ${CURDIR}/chipdb
 
 BUILDDIR := ${CURDIR}/build
 TOP := top
@@ -23,8 +23,7 @@ ${CHIPDB}:
 # otherwise have to parse user pattern and add ../
 ${BUILDDIR}/top.json: ${BUILDDIR} ${SOURCES} top.sv
 	# specify the xilinx libs manually, since read_slang does not like it otherwise (it is re-read anyways in synth_xilinx)
-	yosys -p "plugin -i slang.so ; read_verilog -lib +/xilinx/cells_sim.v ; read_verilog -lib +/xilinx/cells_xtra.v ; read_slang -f flist.txt -top ${TOP}; synth_xilinx -abc9 -arch xc7 -flatten; write_json ${BUILDDIR}/top.json"
-	# >> ${LOGFILE} 2>&1
+	yosys -p "plugin -i slang.so ; read_verilog -lib +/xilinx/cells_sim.v ; read_verilog -lib +/xilinx/cells_xtra.v ; read_slang -f flist.txt -top ${TOP}; synth_xilinx -abc9 -arch xc7 -flatten; write_json ${BUILDDIR}/top.json" >> ${LOGFILE} 2>&1
 
 # The chip database only needs to be generated once
 # that is why we don't clean it with make clean
