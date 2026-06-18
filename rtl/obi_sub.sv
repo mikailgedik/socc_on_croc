@@ -76,6 +76,8 @@ module obi_sub#(
     logic [DATAWIDTH_CLOG-1:0] lower_bits;
     logic [ObiCfg.AddrWidth-1:0] normalized_address;
 
+    // TODO is this really necessary? Can't we just ignore the upper bits?
+    // Ask TA
     normalized_address = obi_req_i.a.addr - OBI_ADDRESS_OFFSET;
 
     destination_selector = normalized_address[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
