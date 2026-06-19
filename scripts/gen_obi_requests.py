@@ -6,7 +6,7 @@ import random
 Generates binary data for the OBI requests
 """
 
-RAM_ADDR_WIDTH = 10 + 2
+RAM_ADDR_WIDTH = 11 + 2
 
 BASE_ADDR_TEXT = (1 << RAM_ADDR_WIDTH)
 BASE_ADDR_GLYPH = (1 << RAM_ADDR_WIDTH) * 2
@@ -38,21 +38,30 @@ reqs : list[ObiR] = [
     ObiR(0x4 + BASE_ADDR_GLYPH, 0x11112211, False, check_read=True),
 ]
 
-# r = random.Random(0)
-# for i in range(80 * 25):
-#     bg_col_idx = r.randrange(8) & 0b111
-#     fg_col_idx = r.randrange(16) & 0b1111
-#     c = ((bg_col_idx & 0b111) << 4) | (fg_col_idx & 0b1111)
-#     print("Bg: ", bg_col_idx, "Fg: ", fg_col_idx)
-#     c = c << 8
-#     c |= i % 256
-#     reqs.append(ObiR(4*(i//2) + BASE_ADDR_TEXT, c if i % 2 == 0 else (c << 16), True, mask=(0b0011 if i%2 == 0 else 0b1100)))
+r = random.Random(0)
+for row in range(30):
+    for col in range(80):
+        i = 80 * row + col
+        # bg_col_idx = r.randrange(8) & 0b111
+        # fg_col_idx = r.randrange(16) & 0b1111
+        # c = ((bg_col_idx & 0b111) << 4) | (fg_col_idx & 0b1111)
+        # print("Bg: ", bg_col_idx, "Fg: ", fg_col_idx)
+        # c = c << 8
+        # c |= i % 256
+        c = 0
+        # if row == 0:
+        #     c = i % 256
+        # if row == 24:
+        #     c = (0xffff - i) % 256
+        if col == 0:
+            c = (row % 10) + ord('0')
+        reqs.append(ObiR(4*(i//2) + BASE_ADDR_TEXT, c if i % 2 == 0 else (c << 16), True, mask=(0b0011 if i%2 == 0 else 0b1100)))
 
-# with open("../res/font/raw.bin", "rb") as f:
-#     data = f.read()
-#     assert len(data) % 4 == 0
-#     for i in range(len(data) // 4):
-#         reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, int.from_bytes(data[4*i:4*i+4], byteorder='little'), True))
+with open("../res/font/raw.bin", "rb") as f:
+    data = f.read()
+    assert len(data) % 4 == 0
+    for i in range(len(data) // 4):
+        reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, int.from_bytes(data[4*i:4*i+4], byteorder='little'), True))
 
 reqs.append(ObiR(0x0 + BASE_ADDR_GLYPH, 0x818181FF, True))
 reqs.append(ObiR(0x4 + BASE_ADDR_GLYPH, 0x81818181, True))

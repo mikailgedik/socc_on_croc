@@ -2,7 +2,7 @@ module address_generator #(
     parameter int COUNTER_WIDTH = 10,
     parameter int GLYPH_WIDTH_BITS = 16,
     parameter int GLYPH_HEIGHT_BITS = 16,
-    parameter int PIXELS_PER_ROW = 480,
+    parameter int PIXELS_PER_ROW = 640,
     parameter int RAM_ADDR_WIDTH = 10
 ) (
     input logic [COUNTER_WIDTH-1:0] screen_x,

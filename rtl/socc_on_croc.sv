@@ -34,7 +34,7 @@ module socc_on_croc  #(
 );
   `include "common_cells/registers.svh"
 
-  localparam int RAM_ADDR_WIDTH = 'd10;
+  localparam int RAM_ADDR_WIDTH = 'd11;
 
   localparam COUNTER_WIDTH = 10;
   logic hsync_unbuffered, vsync_unbuffered, output_visible_unbuffered;
@@ -69,7 +69,7 @@ module socc_on_croc  #(
     .COUNTER_WIDTH(COUNTER_WIDTH),
     .GLYPH_WIDTH_BITS(1 << GLYPH_WIDTH_LOG),
     .GLYPH_HEIGHT_BITS(1 << GLYPH_HEIGHT_LOG),
-    .PIXELS_PER_ROW(V_ACTIVE),
+    .PIXELS_PER_ROW(H_ACTIVE),
     .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH)
   ) i_address_generator (
     .screen_x(screen_x),
