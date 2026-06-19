@@ -1,5 +1,5 @@
 module font_rom (
-    input logic [7:0] char_code, // ASCII/CP437 character code
+    input logic [7:0] char_code, // CP437 character code
     input logic [3:0] row,       // Row index (0-15)
     output logic [7:0] font_data  // Font data
 );
@@ -9,7 +9,7 @@ always_comb begin
 
     unique case (char_code)
 
-        8'h00: begin // Char: 'UNKNOWN_CHAR_0'
+        8'h00: begin // Name: 'Null'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -31,7 +31,7 @@ always_comb begin
             endcase
         end
 
-        8'h01: begin // Char: 'UNKNOWN_CHAR_1'
+        8'h01: begin // Name: 'White Smiling Face'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -53,7 +53,7 @@ always_comb begin
             endcase
         end
 
-        8'h02: begin // Char: 'UNKNOWN_CHAR_2'
+        8'h02: begin // Name: 'Black Smiling Face'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -75,7 +75,7 @@ always_comb begin
             endcase
         end
 
-        8'h03: begin // Char: 'UNKNOWN_CHAR_3'
+        8'h03: begin // Name: 'Black Heart Suit'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -97,7 +97,7 @@ always_comb begin
             endcase
         end
 
-        8'h04: begin // Char: 'UNKNOWN_CHAR_4'
+        8'h04: begin // Name: 'Black Diamond Suit'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00010000;
@@ -119,7 +119,7 @@ always_comb begin
             endcase
         end
 
-        8'h05: begin // Char: 'UNKNOWN_CHAR_5'
+        8'h05: begin // Name: 'Black Club Suit'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -141,7 +141,7 @@ always_comb begin
             endcase
         end
 
-        8'h06: begin // Char: 'UNKNOWN_CHAR_6'
+        8'h06: begin // Name: 'Black Spade Suit'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -163,7 +163,7 @@ always_comb begin
             endcase
         end
 
-        8'h07: begin // Char: 'UNKNOWN_CHAR_7'
+        8'h07: begin // Name: 'Bullet'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -185,7 +185,7 @@ always_comb begin
             endcase
         end
 
-        8'h08: begin // Char: 'UNKNOWN_CHAR_8'
+        8'h08: begin // Name: 'Inverse Bullet'
             unique case (row)
                 4'd0: font_data = 8'b11111111;
                 4'd1: font_data = 8'b11111111;
@@ -207,7 +207,7 @@ always_comb begin
             endcase
         end
 
-        8'h09: begin // Char: 'UNKNOWN_CHAR_9'
+        8'h09: begin // Name: 'White Circle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -229,7 +229,7 @@ always_comb begin
             endcase
         end
 
-        8'h0A: begin // Char: 'REVERSE SOLIDUS'
+        8'h0A: begin // Name: 'Inverse White Circle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -251,7 +251,7 @@ always_comb begin
             endcase
         end
 
-        8'h0B: begin // Char: 'UNKNOWN_CHAR_11'
+        8'h0B: begin // Name: 'Male Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -273,7 +273,7 @@ always_comb begin
             endcase
         end
 
-        8'h0C: begin // Char: 'UNKNOWN_CHAR_12'
+        8'h0C: begin // Name: 'Female Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -295,7 +295,7 @@ always_comb begin
             endcase
         end
 
-        8'h0D: begin // Char: 'REVERSE SOLIDUS'
+        8'h0D: begin // Name: 'Eighth Note'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -317,7 +317,7 @@ always_comb begin
             endcase
         end
 
-        8'h0E: begin // Char: 'UNKNOWN_CHAR_14'
+        8'h0E: begin // Name: 'Beamed Eighth Notes'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -339,7 +339,7 @@ always_comb begin
             endcase
         end
 
-        8'h0F: begin // Char: 'UNKNOWN_CHAR_15'
+        8'h0F: begin // Name: 'Sun with Rays'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -361,7 +361,7 @@ always_comb begin
             endcase
         end
 
-        8'h10: begin // Char: 'UNKNOWN_CHAR_16'
+        8'h10: begin // Name: 'Right-Pointing Triangle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -383,7 +383,7 @@ always_comb begin
             endcase
         end
 
-        8'h11: begin // Char: 'UNKNOWN_CHAR_17'
+        8'h11: begin // Name: 'Left-Pointing Triangle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -405,7 +405,7 @@ always_comb begin
             endcase
         end
 
-        8'h12: begin // Char: 'UNKNOWN_CHAR_18'
+        8'h12: begin // Name: 'Up-Down Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00111100;
@@ -427,7 +427,7 @@ always_comb begin
             endcase
         end
 
-        8'h13: begin // Char: 'UNKNOWN_CHAR_19'
+        8'h13: begin // Name: 'Double Exclamation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -449,7 +449,7 @@ always_comb begin
             endcase
         end
 
-        8'h14: begin // Char: 'UNKNOWN_CHAR_20'
+        8'h14: begin // Name: 'Pilcrow Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -471,7 +471,7 @@ always_comb begin
             endcase
         end
 
-        8'h15: begin // Char: 'UNKNOWN_CHAR_21'
+        8'h15: begin // Name: 'Section Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01111100;
@@ -493,7 +493,7 @@ always_comb begin
             endcase
         end
 
-        8'h16: begin // Char: 'UNKNOWN_CHAR_22'
+        8'h16: begin // Name: 'Black Rectangle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -515,7 +515,7 @@ always_comb begin
             endcase
         end
 
-        8'h17: begin // Char: 'UNKNOWN_CHAR_23'
+        8'h17: begin // Name: 'Up-Down Arrow with Base'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00011000;
@@ -537,7 +537,7 @@ always_comb begin
             endcase
         end
 
-        8'h18: begin // Char: 'UNKNOWN_CHAR_24'
+        8'h18: begin // Name: 'Upwards Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00111100;
@@ -559,7 +559,7 @@ always_comb begin
             endcase
         end
 
-        8'h19: begin // Char: 'UNKNOWN_CHAR_25'
+        8'h19: begin // Name: 'Downwards Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -581,7 +581,7 @@ always_comb begin
             endcase
         end
 
-        8'h1A: begin // Char: 'UNKNOWN_CHAR_26'
+        8'h1A: begin // Name: 'Rightwards Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -603,7 +603,7 @@ always_comb begin
             endcase
         end
 
-        8'h1B: begin // Char: 'UNKNOWN_CHAR_27'
+        8'h1B: begin // Name: 'Leftwards Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -625,7 +625,7 @@ always_comb begin
             endcase
         end
 
-        8'h1C: begin // Char: 'UNKNOWN_CHAR_28'
+        8'h1C: begin // Name: 'Right Angle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -647,7 +647,7 @@ always_comb begin
             endcase
         end
 
-        8'h1D: begin // Char: 'UNKNOWN_CHAR_29'
+        8'h1D: begin // Name: 'Left Right Arrow'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -669,7 +669,7 @@ always_comb begin
             endcase
         end
 
-        8'h1E: begin // Char: 'UNKNOWN_CHAR_30'
+        8'h1E: begin // Name: 'Upwards Triangle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -691,7 +691,7 @@ always_comb begin
             endcase
         end
 
-        8'h1F: begin // Char: 'UNKNOWN_CHAR_31'
+        8'h1F: begin // Name: 'Downwards Triangle'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -713,7 +713,7 @@ always_comb begin
             endcase
         end
 
-        8'h20: begin // Char: 'SPACE'
+        8'h20: begin // Name: 'Space'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -735,7 +735,7 @@ always_comb begin
             endcase
         end
 
-        8'h21: begin // Char: 'EXCLAMATION MARK'
+        8'h21: begin // Name: 'Exclamation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -757,7 +757,7 @@ always_comb begin
             endcase
         end
 
-        8'h22: begin // Char: 'QUOTATION MARK'
+        8'h22: begin // Name: 'Quotation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -779,7 +779,7 @@ always_comb begin
             endcase
         end
 
-        8'h23: begin // Char: 'NUMBER SIGN'
+        8'h23: begin // Name: 'Number Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01101100;
@@ -801,7 +801,7 @@ always_comb begin
             endcase
         end
 
-        8'h24: begin // Char: 'DOLLAR SIGN'
+        8'h24: begin // Name: 'Dollar Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00110000;
@@ -823,7 +823,7 @@ always_comb begin
             endcase
         end
 
-        8'h25: begin // Char: 'PERCENT SIGN'
+        8'h25: begin // Name: 'Percent Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -845,7 +845,7 @@ always_comb begin
             endcase
         end
 
-        8'h26: begin // Char: 'AMPERSAND'
+        8'h26: begin // Name: 'Ampersand'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -867,7 +867,7 @@ always_comb begin
             endcase
         end
 
-        8'h27: begin // Char: 'Code_39'
+        8'h27: begin // Name: 'Apostrophe'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -889,7 +889,7 @@ always_comb begin
             endcase
         end
 
-        8'h28: begin // Char: 'LEFT PARENTHESIS'
+        8'h28: begin // Name: 'Left Parenthesis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00001100;
@@ -911,7 +911,7 @@ always_comb begin
             endcase
         end
 
-        8'h29: begin // Char: 'RIGHT PARENTHESIS'
+        8'h29: begin // Name: 'Right Parenthesis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00110000;
@@ -933,7 +933,7 @@ always_comb begin
             endcase
         end
 
-        8'h2A: begin // Char: 'ASTERISK'
+        8'h2A: begin // Name: 'Asterisk'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -955,7 +955,7 @@ always_comb begin
             endcase
         end
 
-        8'h2B: begin // Char: 'PLUS SIGN'
+        8'h2B: begin // Name: 'Plus Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -977,7 +977,7 @@ always_comb begin
             endcase
         end
 
-        8'h2C: begin // Char: 'COMMA'
+        8'h2C: begin // Name: 'Comma'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -999,7 +999,7 @@ always_comb begin
             endcase
         end
 
-        8'h2D: begin // Char: 'HYPHEN-MINUS'
+        8'h2D: begin // Name: 'Hyphen-Minus'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1021,7 +1021,7 @@ always_comb begin
             endcase
         end
 
-        8'h2E: begin // Char: 'FULL STOP'
+        8'h2E: begin // Name: 'Full Stop'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1043,7 +1043,7 @@ always_comb begin
             endcase
         end
 
-        8'h2F: begin // Char: 'SOLIDUS'
+        8'h2F: begin // Name: 'Slash'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1065,7 +1065,7 @@ always_comb begin
             endcase
         end
 
-        8'h30: begin // Char: 'DIGIT ZERO'
+        8'h30: begin // Name: 'Digit Zero'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1087,7 +1087,7 @@ always_comb begin
             endcase
         end
 
-        8'h31: begin // Char: 'DIGIT ONE'
+        8'h31: begin // Name: 'Digit One'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1109,7 +1109,7 @@ always_comb begin
             endcase
         end
 
-        8'h32: begin // Char: 'DIGIT TWO'
+        8'h32: begin // Name: 'Digit Two'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1131,7 +1131,7 @@ always_comb begin
             endcase
         end
 
-        8'h33: begin // Char: 'DIGIT THREE'
+        8'h33: begin // Name: 'Digit Three'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1153,7 +1153,7 @@ always_comb begin
             endcase
         end
 
-        8'h34: begin // Char: 'DIGIT FOUR'
+        8'h34: begin // Name: 'Digit Four'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1175,7 +1175,7 @@ always_comb begin
             endcase
         end
 
-        8'h35: begin // Char: 'DIGIT FIVE'
+        8'h35: begin // Name: 'Digit Five'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1197,7 +1197,7 @@ always_comb begin
             endcase
         end
 
-        8'h36: begin // Char: 'DIGIT SIX'
+        8'h36: begin // Name: 'Digit Six'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1219,7 +1219,7 @@ always_comb begin
             endcase
         end
 
-        8'h37: begin // Char: 'DIGIT SEVEN'
+        8'h37: begin // Name: 'Digit Seven'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1241,7 +1241,7 @@ always_comb begin
             endcase
         end
 
-        8'h38: begin // Char: 'DIGIT EIGHT'
+        8'h38: begin // Name: 'Digit Eight'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1263,7 +1263,7 @@ always_comb begin
             endcase
         end
 
-        8'h39: begin // Char: 'DIGIT NINE'
+        8'h39: begin // Name: 'Digit Nine'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1285,7 +1285,7 @@ always_comb begin
             endcase
         end
 
-        8'h3A: begin // Char: 'COLON'
+        8'h3A: begin // Name: 'Colon'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1307,7 +1307,7 @@ always_comb begin
             endcase
         end
 
-        8'h3B: begin // Char: 'SEMICOLON'
+        8'h3B: begin // Name: 'Semicolon'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1329,7 +1329,7 @@ always_comb begin
             endcase
         end
 
-        8'h3C: begin // Char: 'LESS-THAN SIGN'
+        8'h3C: begin // Name: 'Less-Than Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1351,7 +1351,7 @@ always_comb begin
             endcase
         end
 
-        8'h3D: begin // Char: 'EQUALS SIGN'
+        8'h3D: begin // Name: 'Equals Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1373,7 +1373,7 @@ always_comb begin
             endcase
         end
 
-        8'h3E: begin // Char: 'GREATER-THAN SIGN'
+        8'h3E: begin // Name: 'Greater-Than Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1395,7 +1395,7 @@ always_comb begin
             endcase
         end
 
-        8'h3F: begin // Char: 'QUESTION MARK'
+        8'h3F: begin // Name: 'Question Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1417,7 +1417,7 @@ always_comb begin
             endcase
         end
 
-        8'h40: begin // Char: 'COMMERCIAL AT'
+        8'h40: begin // Name: 'At Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1439,7 +1439,7 @@ always_comb begin
             endcase
         end
 
-        8'h41: begin // Char: 'LATIN CAPITAL LETTER A'
+        8'h41: begin // Name: 'Uppercase A'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1461,7 +1461,7 @@ always_comb begin
             endcase
         end
 
-        8'h42: begin // Char: 'LATIN CAPITAL LETTER B'
+        8'h42: begin // Name: 'Uppercase B'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1483,7 +1483,7 @@ always_comb begin
             endcase
         end
 
-        8'h43: begin // Char: 'LATIN CAPITAL LETTER C'
+        8'h43: begin // Name: 'Uppercase C'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1505,7 +1505,7 @@ always_comb begin
             endcase
         end
 
-        8'h44: begin // Char: 'LATIN CAPITAL LETTER D'
+        8'h44: begin // Name: 'Uppercase D'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1527,7 +1527,7 @@ always_comb begin
             endcase
         end
 
-        8'h45: begin // Char: 'LATIN CAPITAL LETTER E'
+        8'h45: begin // Name: 'Uppercase E'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1549,7 +1549,7 @@ always_comb begin
             endcase
         end
 
-        8'h46: begin // Char: 'LATIN CAPITAL LETTER F'
+        8'h46: begin // Name: 'Uppercase F'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1571,7 +1571,7 @@ always_comb begin
             endcase
         end
 
-        8'h47: begin // Char: 'LATIN CAPITAL LETTER G'
+        8'h47: begin // Name: 'Uppercase G'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1593,7 +1593,7 @@ always_comb begin
             endcase
         end
 
-        8'h48: begin // Char: 'LATIN CAPITAL LETTER H'
+        8'h48: begin // Name: 'Uppercase H'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1615,7 +1615,7 @@ always_comb begin
             endcase
         end
 
-        8'h49: begin // Char: 'LATIN CAPITAL LETTER I'
+        8'h49: begin // Name: 'Uppercase I'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1637,7 +1637,7 @@ always_comb begin
             endcase
         end
 
-        8'h4A: begin // Char: 'LATIN CAPITAL LETTER J'
+        8'h4A: begin // Name: 'Uppercase J'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1659,7 +1659,7 @@ always_comb begin
             endcase
         end
 
-        8'h4B: begin // Char: 'LATIN CAPITAL LETTER K'
+        8'h4B: begin // Name: 'Uppercase K'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1681,7 +1681,7 @@ always_comb begin
             endcase
         end
 
-        8'h4C: begin // Char: 'LATIN CAPITAL LETTER L'
+        8'h4C: begin // Name: 'Uppercase L'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1703,7 +1703,7 @@ always_comb begin
             endcase
         end
 
-        8'h4D: begin // Char: 'LATIN CAPITAL LETTER M'
+        8'h4D: begin // Name: 'Uppercase M'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1725,7 +1725,7 @@ always_comb begin
             endcase
         end
 
-        8'h4E: begin // Char: 'LATIN CAPITAL LETTER N'
+        8'h4E: begin // Name: 'Uppercase N'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1747,7 +1747,7 @@ always_comb begin
             endcase
         end
 
-        8'h4F: begin // Char: 'LATIN CAPITAL LETTER O'
+        8'h4F: begin // Name: 'Uppercase O'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1769,7 +1769,7 @@ always_comb begin
             endcase
         end
 
-        8'h50: begin // Char: 'LATIN CAPITAL LETTER P'
+        8'h50: begin // Name: 'Uppercase P'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1791,7 +1791,7 @@ always_comb begin
             endcase
         end
 
-        8'h51: begin // Char: 'LATIN CAPITAL LETTER Q'
+        8'h51: begin // Name: 'Uppercase Q'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1813,7 +1813,7 @@ always_comb begin
             endcase
         end
 
-        8'h52: begin // Char: 'LATIN CAPITAL LETTER R'
+        8'h52: begin // Name: 'Uppercase R'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1835,7 +1835,7 @@ always_comb begin
             endcase
         end
 
-        8'h53: begin // Char: 'LATIN CAPITAL LETTER S'
+        8'h53: begin // Name: 'Uppercase S'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1857,7 +1857,7 @@ always_comb begin
             endcase
         end
 
-        8'h54: begin // Char: 'LATIN CAPITAL LETTER T'
+        8'h54: begin // Name: 'Uppercase T'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1879,7 +1879,7 @@ always_comb begin
             endcase
         end
 
-        8'h55: begin // Char: 'LATIN CAPITAL LETTER U'
+        8'h55: begin // Name: 'Uppercase U'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1901,7 +1901,7 @@ always_comb begin
             endcase
         end
 
-        8'h56: begin // Char: 'LATIN CAPITAL LETTER V'
+        8'h56: begin // Name: 'Uppercase V'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1923,7 +1923,7 @@ always_comb begin
             endcase
         end
 
-        8'h57: begin // Char: 'LATIN CAPITAL LETTER W'
+        8'h57: begin // Name: 'Uppercase W'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1945,7 +1945,7 @@ always_comb begin
             endcase
         end
 
-        8'h58: begin // Char: 'LATIN CAPITAL LETTER X'
+        8'h58: begin // Name: 'Uppercase X'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1967,7 +1967,7 @@ always_comb begin
             endcase
         end
 
-        8'h59: begin // Char: 'LATIN CAPITAL LETTER Y'
+        8'h59: begin // Name: 'Uppercase Y'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -1989,7 +1989,7 @@ always_comb begin
             endcase
         end
 
-        8'h5A: begin // Char: 'LATIN CAPITAL LETTER Z'
+        8'h5A: begin // Name: 'Uppercase Z'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2011,7 +2011,7 @@ always_comb begin
             endcase
         end
 
-        8'h5B: begin // Char: 'LEFT SQUARE BRACKET'
+        8'h5B: begin // Name: 'Left Square Bracket'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2033,7 +2033,7 @@ always_comb begin
             endcase
         end
 
-        8'h5C: begin // Char: 'REVERSE SOLIDUS'
+        8'h5C: begin // Name: 'Backslash'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2055,7 +2055,7 @@ always_comb begin
             endcase
         end
 
-        8'h5D: begin // Char: 'RIGHT SQUARE BRACKET'
+        8'h5D: begin // Name: 'Right Square Bracket'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2077,7 +2077,7 @@ always_comb begin
             endcase
         end
 
-        8'h5E: begin // Char: 'CIRCUMFLEX ACCENT'
+        8'h5E: begin // Name: 'Circumflex Accent'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2099,7 +2099,7 @@ always_comb begin
             endcase
         end
 
-        8'h5F: begin // Char: 'LOW LINE'
+        8'h5F: begin // Name: 'Underscore'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2121,7 +2121,7 @@ always_comb begin
             endcase
         end
 
-        8'h60: begin // Char: 'GRAVE ACCENT'
+        8'h60: begin // Name: 'Grave Accent'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2143,7 +2143,7 @@ always_comb begin
             endcase
         end
 
-        8'h61: begin // Char: 'LATIN SMALL LETTER A'
+        8'h61: begin // Name: 'Lowercase a'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2165,7 +2165,7 @@ always_comb begin
             endcase
         end
 
-        8'h62: begin // Char: 'LATIN SMALL LETTER B'
+        8'h62: begin // Name: 'Lowercase b'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2187,7 +2187,7 @@ always_comb begin
             endcase
         end
 
-        8'h63: begin // Char: 'LATIN SMALL LETTER C'
+        8'h63: begin // Name: 'Lowercase c'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2209,7 +2209,7 @@ always_comb begin
             endcase
         end
 
-        8'h64: begin // Char: 'LATIN SMALL LETTER D'
+        8'h64: begin // Name: 'Lowercase d'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2231,7 +2231,7 @@ always_comb begin
             endcase
         end
 
-        8'h65: begin // Char: 'LATIN SMALL LETTER E'
+        8'h65: begin // Name: 'Lowercase e'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2253,7 +2253,7 @@ always_comb begin
             endcase
         end
 
-        8'h66: begin // Char: 'LATIN SMALL LETTER F'
+        8'h66: begin // Name: 'Lowercase f'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2275,7 +2275,7 @@ always_comb begin
             endcase
         end
 
-        8'h67: begin // Char: 'LATIN SMALL LETTER G'
+        8'h67: begin // Name: 'Lowercase g'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2297,7 +2297,7 @@ always_comb begin
             endcase
         end
 
-        8'h68: begin // Char: 'LATIN SMALL LETTER H'
+        8'h68: begin // Name: 'Lowercase h'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2319,7 +2319,7 @@ always_comb begin
             endcase
         end
 
-        8'h69: begin // Char: 'LATIN SMALL LETTER I'
+        8'h69: begin // Name: 'Lowercase i'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2341,7 +2341,7 @@ always_comb begin
             endcase
         end
 
-        8'h6A: begin // Char: 'LATIN SMALL LETTER J'
+        8'h6A: begin // Name: 'Lowercase j'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2363,7 +2363,7 @@ always_comb begin
             endcase
         end
 
-        8'h6B: begin // Char: 'LATIN SMALL LETTER K'
+        8'h6B: begin // Name: 'Lowercase k'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2385,7 +2385,7 @@ always_comb begin
             endcase
         end
 
-        8'h6C: begin // Char: 'LATIN SMALL LETTER L'
+        8'h6C: begin // Name: 'Lowercase l'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2407,7 +2407,7 @@ always_comb begin
             endcase
         end
 
-        8'h6D: begin // Char: 'LATIN SMALL LETTER M'
+        8'h6D: begin // Name: 'Lowercase m'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2429,7 +2429,7 @@ always_comb begin
             endcase
         end
 
-        8'h6E: begin // Char: 'LATIN SMALL LETTER N'
+        8'h6E: begin // Name: 'Lowercase n'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2451,7 +2451,7 @@ always_comb begin
             endcase
         end
 
-        8'h6F: begin // Char: 'LATIN SMALL LETTER O'
+        8'h6F: begin // Name: 'Lowercase o'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2473,7 +2473,7 @@ always_comb begin
             endcase
         end
 
-        8'h70: begin // Char: 'LATIN SMALL LETTER P'
+        8'h70: begin // Name: 'Lowercase p'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2495,7 +2495,7 @@ always_comb begin
             endcase
         end
 
-        8'h71: begin // Char: 'LATIN SMALL LETTER Q'
+        8'h71: begin // Name: 'Lowercase q'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2517,7 +2517,7 @@ always_comb begin
             endcase
         end
 
-        8'h72: begin // Char: 'LATIN SMALL LETTER R'
+        8'h72: begin // Name: 'Lowercase r'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2539,7 +2539,7 @@ always_comb begin
             endcase
         end
 
-        8'h73: begin // Char: 'LATIN SMALL LETTER S'
+        8'h73: begin // Name: 'Lowercase s'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2561,7 +2561,7 @@ always_comb begin
             endcase
         end
 
-        8'h74: begin // Char: 'LATIN SMALL LETTER T'
+        8'h74: begin // Name: 'Lowercase t'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2583,7 +2583,7 @@ always_comb begin
             endcase
         end
 
-        8'h75: begin // Char: 'LATIN SMALL LETTER U'
+        8'h75: begin // Name: 'Lowercase u'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2605,7 +2605,7 @@ always_comb begin
             endcase
         end
 
-        8'h76: begin // Char: 'LATIN SMALL LETTER V'
+        8'h76: begin // Name: 'Lowercase v'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2627,7 +2627,7 @@ always_comb begin
             endcase
         end
 
-        8'h77: begin // Char: 'LATIN SMALL LETTER W'
+        8'h77: begin // Name: 'Lowercase w'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2649,7 +2649,7 @@ always_comb begin
             endcase
         end
 
-        8'h78: begin // Char: 'LATIN SMALL LETTER X'
+        8'h78: begin // Name: 'Lowercase x'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2671,7 +2671,7 @@ always_comb begin
             endcase
         end
 
-        8'h79: begin // Char: 'LATIN SMALL LETTER Y'
+        8'h79: begin // Name: 'Lowercase y'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2693,7 +2693,7 @@ always_comb begin
             endcase
         end
 
-        8'h7A: begin // Char: 'LATIN SMALL LETTER Z'
+        8'h7A: begin // Name: 'Lowercase z'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2715,7 +2715,7 @@ always_comb begin
             endcase
         end
 
-        8'h7B: begin // Char: 'LEFT CURLY BRACKET'
+        8'h7B: begin // Name: 'Left Curly Bracket'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2737,7 +2737,7 @@ always_comb begin
             endcase
         end
 
-        8'h7C: begin // Char: 'VERTICAL LINE'
+        8'h7C: begin // Name: 'Vertical Line'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2759,7 +2759,7 @@ always_comb begin
             endcase
         end
 
-        8'h7D: begin // Char: 'RIGHT CURLY BRACKET'
+        8'h7D: begin // Name: 'Right Curly Bracket'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2781,7 +2781,7 @@ always_comb begin
             endcase
         end
 
-        8'h7E: begin // Char: 'TILDE'
+        8'h7E: begin // Name: 'Tilde'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2803,7 +2803,7 @@ always_comb begin
             endcase
         end
 
-        8'h7F: begin // Char: 'UNKNOWN_CHAR_127'
+        8'h7F: begin // Name: 'House'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2825,7 +2825,7 @@ always_comb begin
             endcase
         end
 
-        8'h80: begin // Char: 'LATIN CAPITAL LETTER C WITH CEDILLA'
+        8'h80: begin // Name: 'Latin Capital C with Cedilla'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2847,7 +2847,7 @@ always_comb begin
             endcase
         end
 
-        8'h81: begin // Char: 'LATIN SMALL LETTER U WITH DIAERESIS'
+        8'h81: begin // Name: 'Latin Small U with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2869,7 +2869,7 @@ always_comb begin
             endcase
         end
 
-        8'h82: begin // Char: 'LATIN SMALL LETTER E WITH ACUTE'
+        8'h82: begin // Name: 'Latin Small E with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00001100;
@@ -2891,7 +2891,7 @@ always_comb begin
             endcase
         end
 
-        8'h83: begin // Char: 'LATIN SMALL LETTER A WITH CIRCUMFLEX'
+        8'h83: begin // Name: 'Latin Small A with Circumflex'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00110000;
@@ -2913,7 +2913,7 @@ always_comb begin
             endcase
         end
 
-        8'h84: begin // Char: 'LATIN SMALL LETTER A WITH DIAERESIS'
+        8'h84: begin // Name: 'Latin Small A with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -2935,7 +2935,7 @@ always_comb begin
             endcase
         end
 
-        8'h85: begin // Char: 'LATIN SMALL LETTER A WITH GRAVE'
+        8'h85: begin // Name: 'Latin Small A with Grave'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01100000;
@@ -2957,7 +2957,7 @@ always_comb begin
             endcase
         end
 
-        8'h86: begin // Char: 'LATIN SMALL LETTER A WITH RING ABOVE'
+        8'h86: begin // Name: 'Latin Small A with Ring Above'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00111000;
@@ -2979,7 +2979,7 @@ always_comb begin
             endcase
         end
 
-        8'h87: begin // Char: 'LATIN SMALL LETTER C WITH CEDILLA'
+        8'h87: begin // Name: 'Latin Small C with Cedilla'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3001,7 +3001,7 @@ always_comb begin
             endcase
         end
 
-        8'h88: begin // Char: 'LATIN SMALL LETTER E WITH CIRCUMFLEX'
+        8'h88: begin // Name: 'Latin Small E with Circumflex'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00110000;
@@ -3023,7 +3023,7 @@ always_comb begin
             endcase
         end
 
-        8'h89: begin // Char: 'LATIN SMALL LETTER E WITH DIAERESIS'
+        8'h89: begin // Name: 'Latin Small E with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3045,7 +3045,7 @@ always_comb begin
             endcase
         end
 
-        8'h8A: begin // Char: 'LATIN SMALL LETTER E WITH GRAVE'
+        8'h8A: begin // Name: 'Latin Small E with Grave'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01100000;
@@ -3067,7 +3067,7 @@ always_comb begin
             endcase
         end
 
-        8'h8B: begin // Char: 'LATIN SMALL LETTER I WITH DIAERESIS'
+        8'h8B: begin // Name: 'Latin Small I with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3089,7 +3089,7 @@ always_comb begin
             endcase
         end
 
-        8'h8C: begin // Char: 'LATIN SMALL LETTER I WITH CIRCUMFLEX'
+        8'h8C: begin // Name: 'Latin Small I with Circumflex'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00010000;
@@ -3111,7 +3111,7 @@ always_comb begin
             endcase
         end
 
-        8'h8D: begin // Char: 'LATIN SMALL LETTER I WITH GRAVE'
+        8'h8D: begin // Name: 'Latin Small I with Grave'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01100000;
@@ -3133,10 +3133,10 @@ always_comb begin
             endcase
         end
 
-        8'h8E: begin // Char: 'LATIN CAPITAL LETTER A WITH DIAERESIS'
+        8'h8E: begin // Name: 'Latin Capital A with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b11000110;
-                4'd1: font_data = 8'b00000000;
+                4'd1: font_data = 8'b11000110;
                 4'd2: font_data = 8'b00010000;
                 4'd3: font_data = 8'b00111000;
                 4'd4: font_data = 8'b01111100;
@@ -3155,7 +3155,7 @@ always_comb begin
             endcase
         end
 
-        8'h8F: begin // Char: 'LATIN CAPITAL LETTER A WITH RING ABOVE'
+        8'h8F: begin // Name: 'Latin Capital A with Ring Above'
             unique case (row)
                 4'd0: font_data = 8'b00111000;
                 4'd1: font_data = 8'b01101100;
@@ -3177,7 +3177,7 @@ always_comb begin
             endcase
         end
 
-        8'h90: begin // Char: 'LATIN CAPITAL LETTER E WITH ACUTE'
+        8'h90: begin // Name: 'Latin Capital E with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00110000;
@@ -3199,7 +3199,7 @@ always_comb begin
             endcase
         end
 
-        8'h91: begin // Char: 'LATIN SMALL LETTER AE'
+        8'h91: begin // Name: 'Latin Small Ash (ae)'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3221,7 +3221,7 @@ always_comb begin
             endcase
         end
 
-        8'h92: begin // Char: 'LATIN CAPITAL LETTER AE'
+        8'h92: begin // Name: 'Latin Capital Ash (AE)'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3243,7 +3243,7 @@ always_comb begin
             endcase
         end
 
-        8'h93: begin // Char: 'LATIN SMALL LETTER O WITH CIRCUMFLEX'
+        8'h93: begin // Name: 'Latin Small O with Circumflex'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00010000;
@@ -3265,7 +3265,7 @@ always_comb begin
             endcase
         end
 
-        8'h94: begin // Char: 'LATIN SMALL LETTER O WITH DIAERESIS'
+        8'h94: begin // Name: 'Latin Small O with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3287,7 +3287,7 @@ always_comb begin
             endcase
         end
 
-        8'h95: begin // Char: 'LATIN SMALL LETTER O WITH GRAVE'
+        8'h95: begin // Name: 'Latin Small O with Grave'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01100000;
@@ -3309,7 +3309,7 @@ always_comb begin
             endcase
         end
 
-        8'h96: begin // Char: 'LATIN SMALL LETTER U WITH CIRCUMFLEX'
+        8'h96: begin // Name: 'Latin Small U with Circumflex'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00110000;
@@ -3331,7 +3331,7 @@ always_comb begin
             endcase
         end
 
-        8'h97: begin // Char: 'LATIN SMALL LETTER U WITH GRAVE'
+        8'h97: begin // Name: 'Latin Small U with Grave'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01100000;
@@ -3353,7 +3353,7 @@ always_comb begin
             endcase
         end
 
-        8'h98: begin // Char: 'LATIN SMALL LETTER Y WITH DIAERESIS'
+        8'h98: begin // Name: 'Latin Small Y with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3375,7 +3375,7 @@ always_comb begin
             endcase
         end
 
-        8'h99: begin // Char: 'LATIN CAPITAL LETTER O WITH DIAERESIS'
+        8'h99: begin // Name: 'Latin Capital O with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b11000110;
                 4'd1: font_data = 8'b11000110;
@@ -3397,7 +3397,7 @@ always_comb begin
             endcase
         end
 
-        8'h9A: begin // Char: 'LATIN CAPITAL LETTER U WITH DIAERESIS'
+        8'h9A: begin // Name: 'Latin Capital U with Diaeresis'
             unique case (row)
                 4'd0: font_data = 8'b11000110;
                 4'd1: font_data = 8'b11000110;
@@ -3419,7 +3419,7 @@ always_comb begin
             endcase
         end
 
-        8'h9B: begin // Char: 'CENT SIGN'
+        8'h9B: begin // Name: 'Cent Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3441,7 +3441,7 @@ always_comb begin
             endcase
         end
 
-        8'h9C: begin // Char: 'POUND SIGN'
+        8'h9C: begin // Name: 'Pound Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3463,7 +3463,7 @@ always_comb begin
             endcase
         end
 
-        8'h9D: begin // Char: 'YEN SIGN'
+        8'h9D: begin // Name: 'Yen Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3485,7 +3485,7 @@ always_comb begin
             endcase
         end
 
-        8'h9E: begin // Char: 'PESETA SIGN'
+        8'h9E: begin // Name: 'Peseta Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3507,7 +3507,7 @@ always_comb begin
             endcase
         end
 
-        8'h9F: begin // Char: 'LATIN SMALL LETTER F WITH HOOK'
+        8'h9F: begin // Name: 'Latin Small F with Hook / Florin'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3529,7 +3529,7 @@ always_comb begin
             endcase
         end
 
-        8'hA0: begin // Char: 'LATIN SMALL LETTER A WITH ACUTE'
+        8'hA0: begin // Name: 'Latin Small A with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00011000;
@@ -3551,7 +3551,7 @@ always_comb begin
             endcase
         end
 
-        8'hA1: begin // Char: 'LATIN SMALL LETTER I WITH ACUTE'
+        8'hA1: begin // Name: 'Latin Small I with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00001100;
@@ -3573,7 +3573,7 @@ always_comb begin
             endcase
         end
 
-        8'hA2: begin // Char: 'LATIN SMALL LETTER O WITH ACUTE'
+        8'hA2: begin // Name: 'Latin Small O with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00011000;
@@ -3595,7 +3595,7 @@ always_comb begin
             endcase
         end
 
-        8'hA3: begin // Char: 'LATIN SMALL LETTER U WITH ACUTE'
+        8'hA3: begin // Name: 'Latin Small U with Acute'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00011000;
@@ -3617,7 +3617,7 @@ always_comb begin
             endcase
         end
 
-        8'hA4: begin // Char: 'LATIN SMALL LETTER N WITH TILDE'
+        8'hA4: begin // Name: 'Latin Small N with Tilde'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01110110;
@@ -3639,7 +3639,7 @@ always_comb begin
             endcase
         end
 
-        8'hA5: begin // Char: 'LATIN CAPITAL LETTER N WITH TILDE'
+        8'hA5: begin // Name: 'Latin Capital N with Tilde'
             unique case (row)
                 4'd0: font_data = 8'b01110110;
                 4'd1: font_data = 8'b11011100;
@@ -3661,7 +3661,7 @@ always_comb begin
             endcase
         end
 
-        8'hA6: begin // Char: 'FEMININE ORDINAL INDICATOR'
+        8'hA6: begin // Name: 'Feminine Ordinal Indicator'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3683,7 +3683,7 @@ always_comb begin
             endcase
         end
 
-        8'hA7: begin // Char: 'MASCULINE ORDINAL INDICATOR'
+        8'hA7: begin // Name: 'Masculine Ordinal Indicator'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3705,7 +3705,7 @@ always_comb begin
             endcase
         end
 
-        8'hA8: begin // Char: 'INVERTED QUESTION MARK'
+        8'hA8: begin // Name: 'Inverted Question Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3727,7 +3727,7 @@ always_comb begin
             endcase
         end
 
-        8'hA9: begin // Char: 'REVERSED NOT SIGN'
+        8'hA9: begin // Name: 'Reversed Not Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3749,7 +3749,7 @@ always_comb begin
             endcase
         end
 
-        8'hAA: begin // Char: 'NOT SIGN'
+        8'hAA: begin // Name: 'Not Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3771,7 +3771,7 @@ always_comb begin
             endcase
         end
 
-        8'hAB: begin // Char: 'VULGAR FRACTION ONE HALF'
+        8'hAB: begin // Name: 'Vulgar Fraction One Half'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b11000010;
@@ -3793,7 +3793,7 @@ always_comb begin
             endcase
         end
 
-        8'hAC: begin // Char: 'VULGAR FRACTION ONE QUARTER'
+        8'hAC: begin // Name: 'Vulgar Fraction One Quarter'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b11000010;
@@ -3815,7 +3815,7 @@ always_comb begin
             endcase
         end
 
-        8'hAD: begin // Char: 'INVERTED EXCLAMATION MARK'
+        8'hAD: begin // Name: 'Inverted Exclamation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3837,7 +3837,7 @@ always_comb begin
             endcase
         end
 
-        8'hAE: begin // Char: 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK'
+        8'hAE: begin // Name: 'Left-Pointing Double Angle Quotation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3859,7 +3859,7 @@ always_comb begin
             endcase
         end
 
-        8'hAF: begin // Char: 'RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK'
+        8'hAF: begin // Name: 'Right-Pointing Double Angle Quotation Mark'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -3881,7 +3881,7 @@ always_comb begin
             endcase
         end
 
-        8'hB0: begin // Char: 'LIGHT SHADE'
+        8'hB0: begin // Name: 'Light Shade'
             unique case (row)
                 4'd0: font_data = 8'b01000100;
                 4'd1: font_data = 8'b00010001;
@@ -3903,7 +3903,7 @@ always_comb begin
             endcase
         end
 
-        8'hB1: begin // Char: 'MEDIUM SHADE'
+        8'hB1: begin // Name: 'Medium Shade'
             unique case (row)
                 4'd0: font_data = 8'b10101010;
                 4'd1: font_data = 8'b01010101;
@@ -3925,7 +3925,7 @@ always_comb begin
             endcase
         end
 
-        8'hB2: begin // Char: 'DARK SHADE'
+        8'hB2: begin // Name: 'Dark Shade'
             unique case (row)
                 4'd0: font_data = 8'b01110111;
                 4'd1: font_data = 8'b11011101;
@@ -3947,7 +3947,7 @@ always_comb begin
             endcase
         end
 
-        8'hB3: begin // Char: 'BOX DRAWINGS LIGHT VERTICAL'
+        8'hB3: begin // Name: 'Box Drawings Light Vertical'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -3969,7 +3969,7 @@ always_comb begin
             endcase
         end
 
-        8'hB4: begin // Char: 'BOX DRAWINGS LIGHT VERTICAL AND LEFT'
+        8'hB4: begin // Name: 'Box Drawings Light Vertical and Left'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -3991,7 +3991,7 @@ always_comb begin
             endcase
         end
 
-        8'hB5: begin // Char: 'BOX DRAWINGS VERTICAL SINGLE AND LEFT DOUBLE'
+        8'hB5: begin // Name: 'Box Drawings Vertical Single and Left Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4013,7 +4013,7 @@ always_comb begin
             endcase
         end
 
-        8'hB6: begin // Char: 'BOX DRAWINGS VERTICAL DOUBLE AND LEFT SINGLE'
+        8'hB6: begin // Name: 'Box Drawings Vertical Double and Left Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4035,7 +4035,7 @@ always_comb begin
             endcase
         end
 
-        8'hB7: begin // Char: 'BOX DRAWINGS DOWN DOUBLE AND LEFT SINGLE'
+        8'hB7: begin // Name: 'Box Drawings Down Double and Left Single'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4057,7 +4057,7 @@ always_comb begin
             endcase
         end
 
-        8'hB8: begin // Char: 'BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE'
+        8'hB8: begin // Name: 'Box Drawings Down Single and Left Double'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4079,7 +4079,7 @@ always_comb begin
             endcase
         end
 
-        8'hB9: begin // Char: 'BOX DRAWINGS DOUBLE VERTICAL AND LEFT'
+        8'hB9: begin // Name: 'Box Drawings Double Vertical and Left'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4101,7 +4101,7 @@ always_comb begin
             endcase
         end
 
-        8'hBA: begin // Char: 'BOX DRAWINGS DOUBLE VERTICAL'
+        8'hBA: begin // Name: 'Box Drawings Double Vertical'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4123,7 +4123,7 @@ always_comb begin
             endcase
         end
 
-        8'hBB: begin // Char: 'BOX DRAWINGS DOUBLE DOWN AND LEFT'
+        8'hBB: begin // Name: 'Box Drawings Double Down and Left'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4145,7 +4145,7 @@ always_comb begin
             endcase
         end
 
-        8'hBC: begin // Char: 'BOX DRAWINGS DOUBLE UP AND LEFT'
+        8'hBC: begin // Name: 'Box Drawings Double Up and Left'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4167,7 +4167,7 @@ always_comb begin
             endcase
         end
 
-        8'hBD: begin // Char: 'BOX DRAWINGS UP DOUBLE AND LEFT SINGLE'
+        8'hBD: begin // Name: 'Box Drawings Up Double and Left Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4189,7 +4189,7 @@ always_comb begin
             endcase
         end
 
-        8'hBE: begin // Char: 'BOX DRAWINGS UP SINGLE AND LEFT DOUBLE'
+        8'hBE: begin // Name: 'Box Drawings Up Single and Left Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4211,7 +4211,7 @@ always_comb begin
             endcase
         end
 
-        8'hBF: begin // Char: 'BOX DRAWINGS LIGHT DOWN AND LEFT'
+        8'hBF: begin // Name: 'Box Drawings Light Down and Left'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4233,7 +4233,7 @@ always_comb begin
             endcase
         end
 
-        8'hC0: begin // Char: 'BOX DRAWINGS LIGHT UP AND RIGHT'
+        8'hC0: begin // Name: 'Box Drawings Light Up and Right'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4255,7 +4255,7 @@ always_comb begin
             endcase
         end
 
-        8'hC1: begin // Char: 'BOX DRAWINGS LIGHT UP AND HORIZONTAL'
+        8'hC1: begin // Name: 'Box Drawings Light Up and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4277,7 +4277,7 @@ always_comb begin
             endcase
         end
 
-        8'hC2: begin // Char: 'BOX DRAWINGS LIGHT DOWN AND HORIZONTAL'
+        8'hC2: begin // Name: 'Box Drawings Light Down and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4299,7 +4299,7 @@ always_comb begin
             endcase
         end
 
-        8'hC3: begin // Char: 'BOX DRAWINGS LIGHT VERTICAL AND RIGHT'
+        8'hC3: begin // Name: 'Box Drawings Light Vertical and Right'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4321,7 +4321,7 @@ always_comb begin
             endcase
         end
 
-        8'hC4: begin // Char: 'BOX DRAWINGS LIGHT HORIZONTAL'
+        8'hC4: begin // Name: 'Box Drawings Light Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4343,7 +4343,7 @@ always_comb begin
             endcase
         end
 
-        8'hC5: begin // Char: 'BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL'
+        8'hC5: begin // Name: 'Box Drawings Light Vertical and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4365,7 +4365,7 @@ always_comb begin
             endcase
         end
 
-        8'hC6: begin // Char: 'BOX DRAWINGS VERTICAL SINGLE AND RIGHT DOUBLE'
+        8'hC6: begin // Name: 'Box Drawings Vertical Single and Right Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4387,7 +4387,7 @@ always_comb begin
             endcase
         end
 
-        8'hC7: begin // Char: 'BOX DRAWINGS VERTICAL DOUBLE AND RIGHT SINGLE'
+        8'hC7: begin // Name: 'Box Drawings Vertical Double and Right Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4409,7 +4409,7 @@ always_comb begin
             endcase
         end
 
-        8'hC8: begin // Char: 'BOX DRAWINGS DOUBLE UP AND RIGHT'
+        8'hC8: begin // Name: 'Box Drawings Double Up and Right'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4431,7 +4431,7 @@ always_comb begin
             endcase
         end
 
-        8'hC9: begin // Char: 'BOX DRAWINGS DOUBLE DOWN AND RIGHT'
+        8'hC9: begin // Name: 'Box Drawings Double Down and Right'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4453,7 +4453,7 @@ always_comb begin
             endcase
         end
 
-        8'hCA: begin // Char: 'BOX DRAWINGS DOUBLE UP AND HORIZONTAL'
+        8'hCA: begin // Name: 'Box Drawings Double Up and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4475,7 +4475,7 @@ always_comb begin
             endcase
         end
 
-        8'hCB: begin // Char: 'BOX DRAWINGS DOUBLE DOWN AND HORIZONTAL'
+        8'hCB: begin // Name: 'Box Drawings Double Down and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4497,7 +4497,7 @@ always_comb begin
             endcase
         end
 
-        8'hCC: begin // Char: 'BOX DRAWINGS DOUBLE VERTICAL AND RIGHT'
+        8'hCC: begin // Name: 'Box Drawings Double Vertical and Right'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4519,7 +4519,7 @@ always_comb begin
             endcase
         end
 
-        8'hCD: begin // Char: 'BOX DRAWINGS DOUBLE HORIZONTAL'
+        8'hCD: begin // Name: 'Box Drawings Double Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4541,7 +4541,7 @@ always_comb begin
             endcase
         end
 
-        8'hCE: begin // Char: 'BOX DRAWINGS DOUBLE VERTICAL AND HORIZONTAL'
+        8'hCE: begin // Name: 'Box Drawings Double Vertical and Horizontal'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4563,7 +4563,7 @@ always_comb begin
             endcase
         end
 
-        8'hCF: begin // Char: 'BOX DRAWINGS UP SINGLE AND HORIZONTAL DOUBLE'
+        8'hCF: begin // Name: 'Box Drawings Up Single and Horizontal Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4585,7 +4585,7 @@ always_comb begin
             endcase
         end
 
-        8'hD0: begin // Char: 'BOX DRAWINGS UP DOUBLE AND HORIZONTAL SINGLE'
+        8'hD0: begin // Name: 'Box Drawings Up Double and Horizontal Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4607,7 +4607,7 @@ always_comb begin
             endcase
         end
 
-        8'hD1: begin // Char: 'BOX DRAWINGS DOWN SINGLE AND HORIZONTAL DOUBLE'
+        8'hD1: begin // Name: 'Box Drawings Down Single and Horizontal Double'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4629,7 +4629,7 @@ always_comb begin
             endcase
         end
 
-        8'hD2: begin // Char: 'BOX DRAWINGS DOWN DOUBLE AND HORIZONTAL SINGLE'
+        8'hD2: begin // Name: 'Box Drawings Down Double and Horizontal Single'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4651,7 +4651,7 @@ always_comb begin
             endcase
         end
 
-        8'hD3: begin // Char: 'BOX DRAWINGS UP DOUBLE AND RIGHT SINGLE'
+        8'hD3: begin // Name: 'Box Drawings Up Double and Right Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4673,7 +4673,7 @@ always_comb begin
             endcase
         end
 
-        8'hD4: begin // Char: 'BOX DRAWINGS UP SINGLE AND RIGHT DOUBLE'
+        8'hD4: begin // Name: 'Box Drawings Up Single and Right Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4695,7 +4695,7 @@ always_comb begin
             endcase
         end
 
-        8'hD5: begin // Char: 'BOX DRAWINGS DOWN SINGLE AND RIGHT DOUBLE'
+        8'hD5: begin // Name: 'Box Drawings Down Single and Right Double'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4717,7 +4717,7 @@ always_comb begin
             endcase
         end
 
-        8'hD6: begin // Char: 'BOX DRAWINGS DOWN DOUBLE AND RIGHT SINGLE'
+        8'hD6: begin // Name: 'Box Drawings Down Double and Right Single'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4739,7 +4739,7 @@ always_comb begin
             endcase
         end
 
-        8'hD7: begin // Char: 'BOX DRAWINGS VERTICAL DOUBLE AND HORIZONTAL SINGLE'
+        8'hD7: begin // Name: 'Box Drawings Vertical Double and Horizontal Single'
             unique case (row)
                 4'd0: font_data = 8'b00110110;
                 4'd1: font_data = 8'b00110110;
@@ -4761,7 +4761,7 @@ always_comb begin
             endcase
         end
 
-        8'hD8: begin // Char: 'BOX DRAWINGS VERTICAL SINGLE AND HORIZONTAL DOUBLE'
+        8'hD8: begin // Name: 'Box Drawings Vertical Single and Horizontal Double'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4783,7 +4783,7 @@ always_comb begin
             endcase
         end
 
-        8'hD9: begin // Char: 'BOX DRAWINGS LIGHT UP AND LEFT'
+        8'hD9: begin // Name: 'Box Drawings Light Up and Left'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -4805,7 +4805,7 @@ always_comb begin
             endcase
         end
 
-        8'hDA: begin // Char: 'BOX DRAWINGS LIGHT DOWN AND RIGHT'
+        8'hDA: begin // Name: 'Box Drawings Light Down and Right'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4827,7 +4827,7 @@ always_comb begin
             endcase
         end
 
-        8'hDB: begin // Char: 'FULL BLOCK'
+        8'hDB: begin // Name: 'Full Block'
             unique case (row)
                 4'd0: font_data = 8'b11111111;
                 4'd1: font_data = 8'b11111111;
@@ -4849,7 +4849,7 @@ always_comb begin
             endcase
         end
 
-        8'hDC: begin // Char: 'LOWER HALF BLOCK'
+        8'hDC: begin // Name: 'Lower Half Block'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4871,7 +4871,7 @@ always_comb begin
             endcase
         end
 
-        8'hDD: begin // Char: 'LEFT HALF BLOCK'
+        8'hDD: begin // Name: 'Left Half Block'
             unique case (row)
                 4'd0: font_data = 8'b11110000;
                 4'd1: font_data = 8'b11110000;
@@ -4893,7 +4893,7 @@ always_comb begin
             endcase
         end
 
-        8'hDE: begin // Char: 'RIGHT HALF BLOCK'
+        8'hDE: begin // Name: 'Right Half Block'
             unique case (row)
                 4'd0: font_data = 8'b00001111;
                 4'd1: font_data = 8'b00001111;
@@ -4915,7 +4915,7 @@ always_comb begin
             endcase
         end
 
-        8'hDF: begin // Char: 'UPPER HALF BLOCK'
+        8'hDF: begin // Name: 'Upper Half Block'
             unique case (row)
                 4'd0: font_data = 8'b11111111;
                 4'd1: font_data = 8'b11111111;
@@ -4937,7 +4937,7 @@ always_comb begin
             endcase
         end
 
-        8'hE0: begin // Char: 'GREEK SMALL LETTER ALPHA'
+        8'hE0: begin // Name: 'Greek Small Alpha'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4959,7 +4959,7 @@ always_comb begin
             endcase
         end
 
-        8'hE1: begin // Char: 'LATIN SMALL LETTER SHARP S'
+        8'hE1: begin // Name: 'Greek Small Beta / Latin Small Sharp S'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -4981,7 +4981,7 @@ always_comb begin
             endcase
         end
 
-        8'hE2: begin // Char: 'GREEK CAPITAL LETTER GAMMA'
+        8'hE2: begin // Name: 'Greek Capital Gamma'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5003,7 +5003,7 @@ always_comb begin
             endcase
         end
 
-        8'hE3: begin // Char: 'GREEK SMALL LETTER PI'
+        8'hE3: begin // Name: 'Greek Small Pi'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5025,7 +5025,7 @@ always_comb begin
             endcase
         end
 
-        8'hE4: begin // Char: 'GREEK CAPITAL LETTER SIGMA'
+        8'hE4: begin // Name: 'Greek Capital Sigma'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5047,7 +5047,7 @@ always_comb begin
             endcase
         end
 
-        8'hE5: begin // Char: 'GREEK SMALL LETTER SIGMA'
+        8'hE5: begin // Name: 'Greek Small Sigma'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5069,7 +5069,7 @@ always_comb begin
             endcase
         end
 
-        8'hE6: begin // Char: 'MICRO SIGN'
+        8'hE6: begin // Name: 'Micro Sign / Mu'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5091,7 +5091,7 @@ always_comb begin
             endcase
         end
 
-        8'hE7: begin // Char: 'GREEK SMALL LETTER TAU'
+        8'hE7: begin // Name: 'Greek Small Tau'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5113,7 +5113,7 @@ always_comb begin
             endcase
         end
 
-        8'hE8: begin // Char: 'GREEK CAPITAL LETTER PHI'
+        8'hE8: begin // Name: 'Greek Capital Phi'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b01111000;
@@ -5135,7 +5135,7 @@ always_comb begin
             endcase
         end
 
-        8'hE9: begin // Char: 'GREEK CAPITAL LETTER THETA'
+        8'hE9: begin // Name: 'Greek Capital Theta'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5157,7 +5157,7 @@ always_comb begin
             endcase
         end
 
-        8'hEA: begin // Char: 'GREEK CAPITAL LETTER OMEGA'
+        8'hEA: begin // Name: 'Greek Capital Omega'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5179,7 +5179,7 @@ always_comb begin
             endcase
         end
 
-        8'hEB: begin // Char: 'GREEK SMALL LETTER DELTA'
+        8'hEB: begin // Name: 'Greek Small Delta'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00111100;
@@ -5201,7 +5201,7 @@ always_comb begin
             endcase
         end
 
-        8'hEC: begin // Char: 'INFINITY'
+        8'hEC: begin // Name: 'Infinity'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5223,7 +5223,7 @@ always_comb begin
             endcase
         end
 
-        8'hED: begin // Char: 'GREEK SMALL LETTER PHI'
+        8'hED: begin // Name: 'Greek Small Phi'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5245,7 +5245,7 @@ always_comb begin
             endcase
         end
 
-        8'hEE: begin // Char: 'GREEK SMALL LETTER EPSILON'
+        8'hEE: begin // Name: 'Greek Small Epsilon'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5267,7 +5267,7 @@ always_comb begin
             endcase
         end
 
-        8'hEF: begin // Char: 'INTERSECTION'
+        8'hEF: begin // Name: 'Intersection'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5289,7 +5289,7 @@ always_comb begin
             endcase
         end
 
-        8'hF0: begin // Char: 'IDENTICAL TO'
+        8'hF0: begin // Name: 'Identical To'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5311,7 +5311,7 @@ always_comb begin
             endcase
         end
 
-        8'hF1: begin // Char: 'PLUS-MINUS SIGN'
+        8'hF1: begin // Name: 'Plus-Minus Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5333,7 +5333,7 @@ always_comb begin
             endcase
         end
 
-        8'hF2: begin // Char: 'GREATER-THAN OR EQUAL TO'
+        8'hF2: begin // Name: 'Greater-Than or Equal To'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5355,7 +5355,7 @@ always_comb begin
             endcase
         end
 
-        8'hF3: begin // Char: 'LESS-THAN OR EQUAL TO'
+        8'hF3: begin // Name: 'Less-Than or Equal To'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5377,7 +5377,7 @@ always_comb begin
             endcase
         end
 
-        8'hF4: begin // Char: 'TOP HALF INTEGRAL'
+        8'hF4: begin // Name: 'Top Half Integral'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5399,7 +5399,7 @@ always_comb begin
             endcase
         end
 
-        8'hF5: begin // Char: 'BOTTOM HALF INTEGRAL'
+        8'hF5: begin // Name: 'Bottom Half Integral'
             unique case (row)
                 4'd0: font_data = 8'b00011000;
                 4'd1: font_data = 8'b00011000;
@@ -5421,7 +5421,7 @@ always_comb begin
             endcase
         end
 
-        8'hF6: begin // Char: 'DIVISION SIGN'
+        8'hF6: begin // Name: 'Division Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5443,7 +5443,7 @@ always_comb begin
             endcase
         end
 
-        8'hF7: begin // Char: 'ALMOST EQUAL TO'
+        8'hF7: begin // Name: 'Almost Equal To'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5465,7 +5465,7 @@ always_comb begin
             endcase
         end
 
-        8'hF8: begin // Char: 'DEGREE SIGN'
+        8'hF8: begin // Name: 'Degree Sign'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5487,7 +5487,7 @@ always_comb begin
             endcase
         end
 
-        8'hF9: begin // Char: 'BULLET OPERATOR'
+        8'hF9: begin // Name: 'Bullet Operator'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5509,7 +5509,7 @@ always_comb begin
             endcase
         end
 
-        8'hFA: begin // Char: 'MIDDLE DOT'
+        8'hFA: begin // Name: 'Middle Dot'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5531,7 +5531,7 @@ always_comb begin
             endcase
         end
 
-        8'hFB: begin // Char: 'SQUARE ROOT'
+        8'hFB: begin // Name: 'Square Root'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5553,7 +5553,7 @@ always_comb begin
             endcase
         end
 
-        8'hFC: begin // Char: 'SUPERSCRIPT LATIN SMALL LETTER N'
+        8'hFC: begin // Name: 'Superscript Latin Small N'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b11011000;
@@ -5575,7 +5575,7 @@ always_comb begin
             endcase
         end
 
-        8'hFD: begin // Char: 'SUPERSCRIPT TWO'
+        8'hFD: begin // Name: 'Superscript Two'
             unique case (row)
                 4'd0: font_data = 8'b01110000;
                 4'd1: font_data = 8'b11001000;
@@ -5597,7 +5597,7 @@ always_comb begin
             endcase
         end
 
-        8'hFE: begin // Char: 'BLACK SQUARE'
+        8'hFE: begin // Name: 'Black Square'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
@@ -5619,7 +5619,7 @@ always_comb begin
             endcase
         end
 
-        8'hFF: begin // Char: 'NO-BREAK SPACE'
+        8'hFF: begin // Name: 'Non-breaking Space'
             unique case (row)
                 4'd0: font_data = 8'b00000000;
                 4'd1: font_data = 8'b00000000;
