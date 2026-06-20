@@ -22,8 +22,12 @@ class ObiR:
 
 
 reqs : list[ObiR] = [
-    ObiR(0x0, 0x04030201, True),
-    ObiR(0x0, 0x04030201, False, check_read=True),
+    ObiR(0x0, 0xfeeffaaf, True),
+    ObiR(0x0, 0xfeeffaaf, False, check_read=True),
+    ObiR(0x4, 0xaaaaaaaa, True),
+    ObiR(0x4, 0xbbbbbbbb, True, mask=0b0010),
+    ObiR(0x4, 0xaaaabbaa, False, check_read=True),
+
     ObiR(0x0 + BASE_ADDR_TEXT, 0xfeeffaaf, True),
     ObiR(0x0 + BASE_ADDR_TEXT, 0xfeeffaaf, False, check_read=True),
     ObiR(0x4 + BASE_ADDR_TEXT, 0xaaaaaaaa, True),
@@ -48,7 +52,7 @@ for row in range(30):
         # print("Bg: ", bg_col_idx, "Fg: ", fg_col_idx)
         # c = c << 8
         # c |= i % 256
-        c = 0
+        c = i % 256
         # if row == 0:
         #     c = i % 256
         # if row == 24:
@@ -61,18 +65,17 @@ with open("../res/font/raw.bin", "rb") as f:
     data = f.read()
     assert len(data) % 4 == 0
     for i in range(len(data) // 4):
-        reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, int.from_bytes(data[4*i:4*i+4], byteorder='little'), True))
+        word = 0
+        if i // 4 >= ord('A') and i // 4 <= ord('z') or i // 4 >= ord('0') and i // 4 <= ord('9'):
+            word = int.from_bytes(data[4*i:4*i+4], byteorder='little')
+        reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, word, True))
 
-reqs.append(ObiR(0x0 + BASE_ADDR_GLYPH, 0x818181FF, True))
-reqs.append(ObiR(0x4 + BASE_ADDR_GLYPH, 0x81818181, True))
-reqs.append(ObiR(0x8 + BASE_ADDR_GLYPH, 0x81818181, True))
-reqs.append(ObiR(0xC + BASE_ADDR_GLYPH, 0xFF818181, True))
-
-reqs.append(ObiR(0x10 + BASE_ADDR_GLYPH, 0x0F0F0F0F, True))
-reqs.append(ObiR(0x14 + BASE_ADDR_GLYPH, 0x0F0F0F0F, True))
-reqs.append(ObiR(0x18 + BASE_ADDR_GLYPH, 0xF0F0F0F0, True))
-reqs.append(ObiR(0x1C + BASE_ADDR_GLYPH, 0xF0F0F0F0, True))
-
+# Write back default colors after testing regs
+reqs.append(ObiR(0x0, 0xe01c0300, True))
+reqs.append(ObiR(0x4, 0x600c01fc, True))
+reqs.append(ObiR(0x8, 0xe31f9245, True))
+reqs.append(ObiR(0xC, 0xff6d6d25, True))
+reqs.append(ObiR(4*4, 0b100000, True))
 
 FILE_CONTENT = """
 // Copyright 2026 ETH Zurich.

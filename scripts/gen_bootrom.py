@@ -117,7 +117,7 @@ module {module_name} #(
     localparam unsigned NumWords = {num_words};
     logic [$clog2(NumWords)-1:0] word;
 
-    assign word = addr_i / (DataWidth / 8);
+    assign word = ( $clog2(NumWords) ) ' ( (addr_i) / ((AddrWidth)'(DataWidth / 8)) );
 
     always_comb begin
         data_o = '0;

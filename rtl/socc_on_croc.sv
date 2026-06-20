@@ -39,7 +39,14 @@ module socc_on_croc  #(
   localparam COUNTER_WIDTH = 10;
   logic hsync_unbuffered, vsync_unbuffered, output_visible_unbuffered;
   logic [COUNTER_WIDTH-1:0] screen_x, screen_y;
-  
+
+  logic [3:0] clk_divider;
+  logic clk_enable;
+  logic [3:0] clk_counter_q, clk_counter_d;
+  `FF(clk_counter_q, clk_counter_d, '1, clk_i, rst_ni);
+  assign clk_counter_d = clk_counter_q == clk_divider ? 'h0 : clk_counter_q + 'h1;
+  assign clk_enable = clk_counter_q == 'h0;
+
   sync_generator #(
     .COUNTER_WIDTH(COUNTER_WIDTH),
 
@@ -55,7 +62,7 @@ module socc_on_croc  #(
   ) i_sync_generator (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
-    .clk_enable_i('1),
+    .clk_enable_i(clk_enable),
 
     .hsync_o(hsync_unbuffered),
     .vsync_o(vsync_unbuffered),
@@ -84,6 +91,10 @@ module socc_on_croc  #(
   logic ram_we;
   logic ram_selector;
 
+  logic blink_disable;
+  logic [7:0] color_palette [15:0];
+  logic enable_glyph_ram;
+
   obi_sub #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
@@ -97,7 +108,10 @@ module socc_on_croc  #(
     .obi_req_i(obi_req_i),
     .obi_rsp_o(obi_rsp_o),
 
-    .conf0_o(),
+    .color_palette_o(color_palette),
+    .clk_divider_o(clk_divider),
+    .disable_blink_o(blink_disable),
+    .enable_glyph_ram_o(enable_glyph_ram),
 
     .ram_addr_o(ram_addr),
     .ram_data_o(ram_data),
@@ -128,7 +142,9 @@ module socc_on_croc  #(
     .port1_we_i(ram_we && (ram_selector == 'd0))
   );
 
-  logic one_bit_pixel;
+  logic one_bit_pixel, one_bit_pixel_rom, one_bit_pixel_ram;
+  assign one_bit_pixel = enable_glyph_ram ? one_bit_pixel_ram : one_bit_pixel_rom;
+
   // Delayed by one clk cylce, since text RAM adds 1 latency
   logic [GLYPH_WIDTH_LOG-1:0] glyph_x;
   logic [GLYPH_HEIGHT_LOG-1:0] glyph_y;
@@ -147,13 +163,28 @@ module socc_on_croc  #(
     .port0_ascii_i(ascii_char),
     .port0_x_i(glyph_x),
     .port0_y_i(glyph_y),
-    .port0_pixel_o(one_bit_pixel),
+    .port0_pixel_o(one_bit_pixel_ram),
 
     .port1_addr_i(ram_addr),
     .port1_data_o(ram_data_output[1]),
     .port1_data_i(ram_data),
     .port1_be_i(ram_be),
     .port1_we_i(ram_we && (ram_selector == 'd1))
+  );
+
+  glyph_rom_wrapper #(
+    .ADDRESS_WIDTH(RAM_ADDR_WIDTH),
+    .DATA_WIDTH(ObiCfg.DataWidth),
+    .GLYPH_WIDTH_LOG(GLYPH_WIDTH_LOG),
+    .GLYPH_HEIGHT_LOG(GLYPH_HEIGHT_LOG)
+  ) i_glyph_rom (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+    
+    .port0_ascii_i(ascii_char),
+    .port0_x_i(glyph_x),
+    .port0_y_i(glyph_y),
+    .port0_pixel_o(one_bit_pixel_rom)
   );
 
   logic [7:0] color_blink_delayed;
@@ -165,16 +196,9 @@ module socc_on_croc  #(
     .rst_ni(rst_ni),
     .input_pixel_i(one_bit_pixel),
     .color_blink_i(color_blink_delayed),
-    .color_palette_i(
-      '{
-        // TODO sensible default colors...?
-        8'b0000_0000, // black
-        8'b1110_0000,8'b0001_1100,8'b0000_0011, // full colors
-        8'b0110_0000,8'b0000_1100,8'b0000_0001, // dim colors
-        8'b1111_1100,8'b1110_0011,8'b0001_1111, // full 2-col mixes
-        8'b1001_0010,8'b0100_0101,8'b0110_1101, // dim 2-col mixes
-        8'b0110_1101,8'b0010_0101,8'b1111_1111  // gray & white
-      }),
+    .color_palette_i(color_palette),
+    .blink_disable_i(blink_disable),
+    .clk_enable_i(clk_enable),
     .color_o(color)
   );
 

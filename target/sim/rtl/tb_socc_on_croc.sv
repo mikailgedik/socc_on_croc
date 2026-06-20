@@ -61,8 +61,6 @@ module tb_socc_on_croc;
       wait (obi_done == '1);
       DelayImpl#(.T_CLK(T_CLK))::capture_image($sformatf("./output-%03x.bmp", 0), color, h_sync, v_sync);
 
-      // capture_image($sformatf("./output-%03x.bmp", 2));
-      // capture_image($sformatf("./output-%03x.bmp", 3));
       eoc = 1;
 
       // Finish recording the waveform

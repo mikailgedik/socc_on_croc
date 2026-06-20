@@ -16,7 +16,10 @@ module obi_sub#(
   input obi_req_t obi_req_i,
   output obi_rsp_t obi_rsp_o,
 
-  output logic[ObiCfg.DataWidth-1:0] conf0_o,
+  output logic [7:0] color_palette_o [15:0],
+  output logic[3:0] clk_divider_o,
+  output logic disable_blink_o,
+  output logic enable_glyph_ram_o,
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
@@ -26,37 +29,19 @@ module obi_sub#(
   output logic ram_selector_o
 );
 
-  // /// OBI Xbar -> Subordinate address channel
-  // typedef struct packed {
-  //   logic [  SbrObiCfg.AddrWidth-1:0] addr;
-  //   logic                             we;
-  //   logic [SbrObiCfg.DataWidth/8-1:0] be;
-  //   logic [  SbrObiCfg.DataWidth-1:0] wdata;
-  //   logic [    SbrObiCfg.IdWidth-1:0] aid;
-  //   logic                             a_optional; // dummy signal; not used
-  // } sbr_obi_a_chan_t;
-  // /// OBI Xbar -> Subordinate request
-  // typedef struct packed {
-  //   sbr_obi_a_chan_t a;
-  //   logic            req;
-  // } sbr_obi_req_t;
-
-  // /// OBI Xbar <- Subordinate response channel
-  // typedef struct packed {
-  //   logic [SbrObiCfg.DataWidth-1:0] rdata;
-  //   logic [  SbrObiCfg.IdWidth-1:0] rid;
-  //   logic                           err;
-  //   logic                           r_optional; // dummy signal; not used
-  // } sbr_obi_r_chan_t;
-  // /// OBI Xbar <- Subordinate response
-  // typedef struct packed {
-  //   sbr_obi_r_chan_t r;
-  //   logic            gnt;
-  //   logic            rvalid;
-  // } sbr_obi_rsp_t;
-
-  logic [ObiCfg.DataWidth-1:0] config_d, config_q;
-  `FF(config_q, config_d, 'b0, clk_i, rst_ni);
+  localparam int CONFIG_REGS = 4 + 1; // 4 regs for color, 1 reg for config
+  logic [ObiCfg.DataWidth-1:0] config_d [0:CONFIG_REGS-1], config_q[0:CONFIG_REGS-1];
+  `FF(config_q, config_d, 
+        // Default config/colors
+        '{
+        // TODO sensible default colors...?
+        {8'b1110_0000, 8'b0001_1100, 8'b0000_0011, 8'b0000_0000 }, // full colors & black
+        { 8'b0110_0000,8'b0000_1100,8'b0000_0001, // dim colors
+        8'b1111_1100 } , { 8'b1110_0011,8'b0001_1111, // full 2-col mixes
+        8'b1001_0010,8'b0100_0101 }, { 8'b1111_1111, 8'b0110_1101, // dim 2-col mixes & white
+        8'b0110_1101,8'b0010_0101 },  // gray
+        32'h0 // Default config: blink is enabled, clk div = 0
+  }, clk_i, rst_ni);
 
   // OBI signals/regs
   logic [ObiCfg.IdWidth-1:0]  rid_d, rid_q;
@@ -106,22 +91,19 @@ module obi_sub#(
         $error("Lower bits should not be set!");
       `endif
     end else if (destination_selector == 'h0) begin
-      case (dest_addr)
-        'h0: begin
-          read_config_d = config_q;
+      if (32'(dest_addr) < CONFIG_REGS) begin
+          read_config_d = config_q[dest_addr[$clog2(CONFIG_REGS)-1:0]];
           if(obi_req_i.a.we) begin
             for(int b = 0; b < ObiCfg.DataWidth/8; b++) begin
               if (obi_req_i.a.be[b] == '1) begin
-                config_d[8*b +: 8] = obi_req_i.a.wdata[8*b +: 8];
+                config_d[dest_addr[$clog2(CONFIG_REGS)-1:0]][8*b +: 8] = obi_req_i.a.wdata[8*b +: 8];
               end
             end
           end
-        end
-        default: begin
-          err_d = '1;
-          read_config_d = 'hdeadbeef;
-        end
-      endcase
+      end else begin
+        err_d = '1;
+        read_config_d = 'hdeadbeef;
+      end
     end else begin
       ram_addr_o = dest_addr;
       ram_we_o = obi_req_i.a.we;
@@ -142,8 +124,15 @@ module obi_sub#(
     end
   end
 
-  assign conf0_o = config_q;
-
+  genvar i;
+  generate
+    for(i = 0; i < 16; i++) begin
+      assign color_palette_o[i] = config_q[i / 4][8*(i % 4) +: 8];
+    end
+  endgenerate
+  assign clk_divider_o = config_q[4][3:0];
+  assign disable_blink_o = config_q[4][4];
+  assign enable_glyph_ram_o = config_q[4][5];
   assign obi_rsp_o.r.rdata = rdata_src_q == 'h0 ? read_config_q : (rdata_src_q == 'h1 ? ram_data_i[0]: ram_data_i[1]);
   assign obi_rsp_o.r.rid = rid_q;
   assign obi_rsp_o.r.err = err_q;
