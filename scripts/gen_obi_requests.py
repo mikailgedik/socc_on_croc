@@ -53,12 +53,13 @@ for row in range(30):
         # c = c << 8
         # c |= i % 256
         c = i % 256
+        c = c | ((i % 256) << 8)
         # if row == 0:
         #     c = i % 256
         # if row == 24:
         #     c = (0xffff - i) % 256
         if col == 0:
-            c = (row % 10) + ord('0')
+            c = ((row % 10) + ord('0')) | (0b00001111 << 8)
         reqs.append(ObiR(4*(i//2) + BASE_ADDR_TEXT, c if i % 2 == 0 else (c << 16), True, mask=(0b0011 if i%2 == 0 else 0b1100)))
 
 with open("../res/font/raw.bin", "rb") as f:
@@ -71,11 +72,17 @@ with open("../res/font/raw.bin", "rb") as f:
         reqs.append(ObiR(4*i + BASE_ADDR_GLYPH, word, True))
 
 # Write back default colors after testing regs
-reqs.append(ObiR(0x0, 0xe01c0300, True))
-reqs.append(ObiR(0x4, 0x600c01fc, True))
-reqs.append(ObiR(0x8, 0xe31f9245, True))
-reqs.append(ObiR(0xC, 0xff6d6d25, True))
-reqs.append(ObiR(4*4, 0b100000, True))
+reqs.append(ObiR(0x00, 0x00110000, True))
+reqs.append(ObiR(0x04, 0x04510320, True))
+reqs.append(ObiR(0x08, 0x88118800, True))
+reqs.append(ObiR(0x0C, 0x8410a145, True))
+reqs.append(ObiR(0x10, 0x001fd69a, True))
+reqs.append(ObiR(0x14, 0x07ff0400, True))
+reqs.append(ObiR(0x18, 0xf81ff800, True))
+reqs.append(ObiR(0x1C, 0xffffffe0, True))
+
+
+reqs.append(ObiR(0x20, 0b11010000, True))
 
 FILE_CONTENT = """
 // Copyright 2026 ETH Zurich.

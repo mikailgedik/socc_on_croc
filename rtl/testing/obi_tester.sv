@@ -10,7 +10,7 @@ module obi_tester #(
 
     output logic vsync_o,
     output logic hsync_o,
-    output logic[7:0] color_o,
+    output logic[15:0] color_o,
     output logic obi_done
 );
   localparam total_pixels_h = 16'd800;
@@ -55,7 +55,8 @@ module obi_tester #(
     .obi_rsp_o(obi_rsp),
     .hsync_o(hsync_o),
     .vsync_o(vsync_o),
-    .color_o(color_o)
+    .color_o(color_o),
+    .frame_done_interrupt_o()
   );
 
   obi_manager #(

@@ -45,7 +45,7 @@ module glyph_rom_wrapper#(
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .req_i('1),
-        .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(0'h0) }),
+        .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
         .data_o(rdata_unbuffered)
     );
 endmodule

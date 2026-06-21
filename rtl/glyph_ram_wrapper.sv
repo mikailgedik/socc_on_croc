@@ -48,7 +48,7 @@ module glyph_ram_wrapper#(
 
     assign port0_pixel_o = rdata[0][bit_shift_q];
 
-    assign we = {port1_we_i, 1'bZ};
+    assign we = {port1_we_i, 1'b0};
     assign addr = {port1_addr_i, port0_addr};
     assign wdata = {port1_data_i, (DATA_WIDTH)'(0)};
     assign be = {port1_be_i, {(DATA_WIDTH/8){1'b1}}};

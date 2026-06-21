@@ -25,7 +25,9 @@ module sync_generator #(
     output logic visible_o,
 
     output logic[COUNTER_WIDTH-1:0] hpos_o,
-    output logic[COUNTER_WIDTH-1:0] vpos_o
+    output logic[COUNTER_WIDTH-1:0] vpos_o,
+
+    output logic frame_done_o
 );
     `include "common_cells/registers.svh"
 
@@ -68,4 +70,5 @@ module sync_generator #(
     assign hpos_o = hcounter_q;
     assign vpos_o = vcounter_q;
 
+    assign frame_done_o = (32'(hcounter_q) == H_ACTIVE - 1) && (32'(vcounter_q) == V_ACTIVE - 1);
 endmodule

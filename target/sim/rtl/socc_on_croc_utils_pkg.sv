@@ -2,7 +2,7 @@ package socc_on_croc_utils_pkg;
   class DelayImpl #(
     parameter time T_CLK = 10ns
   );
-    static task automatic capture_image(input string file_name, ref logic [7:0] color, ref logic h_sync, ref logic v_sync);
+    static task automatic capture_image(input string file_name, ref logic [15:0] color, ref logic h_sync, ref logic v_sync);
         localparam int img_w = 'd800, img_h = 'd525, img_byte_per_pixel = 'd3;
         localparam int img_w_bytes = (img_byte_per_pixel * img_w + 3) / 4 * 4; //Round up each row to 4 bytes
         // pad w to 4 bytes
@@ -43,9 +43,9 @@ package socc_on_croc_utils_pkg;
               end else begin
                 rgb = {
                       8'h00,
-                      color[7:5],color[7:5],color[7:6],
-                      color[4:2],color[4:2],color[4:3],
-                      color[1:0],color[1:0],color[1:0],color[1:0]
+                      color[15:11],color[15:13],
+                      color[10:5],color[10:9],
+                      color[4:0],color[4:2]
                       };
                 img_data[y][x] = rgb;
               end

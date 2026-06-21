@@ -16,10 +16,12 @@ module obi_sub#(
   input obi_req_t obi_req_i,
   output obi_rsp_t obi_rsp_o,
 
-  output logic [7:0] color_palette_o [15:0],
+  output logic [15:0] color_palette_o [15:0],
   output logic[3:0] clk_divider_o,
   output logic disable_blink_o,
   output logic enable_glyph_ram_o,
+  output logic enable_frame_done_interrupt_o,
+  output logic enable_o,
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
@@ -29,18 +31,30 @@ module obi_sub#(
   output logic ram_selector_o
 );
 
-  localparam int CONFIG_REGS = 4 + 1; // 4 regs for color, 1 reg for config
-  logic [ObiCfg.DataWidth-1:0] config_d [0:CONFIG_REGS-1], config_q[0:CONFIG_REGS-1];
+  localparam int CONFIG_REGS = 8 + 1; // 8 regs for color, 1 reg for config
+  logic [CONFIG_REGS-1:0][ObiCfg.DataWidth-1:0] config_d, config_q;
   `FF(config_q, config_d, 
         // Default config/colors
-        '{
-        // TODO sensible default colors...?
-        {8'b1110_0000, 8'b0001_1100, 8'b0000_0011, 8'b0000_0000 }, // full colors & black
-        { 8'b0110_0000,8'b0000_1100,8'b0000_0001, // dim colors
-        8'b1111_1100 } , { 8'b1110_0011,8'b0001_1111, // full 2-col mixes
-        8'b1001_0010,8'b0100_0101 }, { 8'b1111_1111, 8'b0110_1101, // dim 2-col mixes & white
-        8'b0110_1101,8'b0010_0101 },  // gray
-        32'h0 // Default config: blink is enabled, clk div = 0
+        {
+        32'h0, // Default config
+        // Colors names are from https://www.fountainware.com/EXPL/vga_color_palettes.htm
+        // Color names are the HTML/CSS names
+        16'hFFFF, // Color Index 0F: white
+        16'hffe0, // Color Index 0E: yellow
+        16'hf81f, // Color Index 0D: magenta
+        16'hf800, // Color Index 0C: red
+        16'h07ff, // Color Index 0B: cyan
+        16'h0400, // Color Index 0A: green
+        16'h001f, // Color Index 09: blue
+        16'hd69a, // Color Index 08: lightgray
+        16'h8410, // Color Index 07: gray
+        16'ha145, // Color Index 06: brown
+        16'h8811, // Color Index 05: darkmagenta
+        16'h8800, // Color Index 04: darkred
+        16'h0451, // Color Index 03: darkcyan
+        16'h0320, // Color Index 02: darkgreen
+        16'h0011, // Color Index 01: darkblue
+        16'h0000  // Color Index 00: black
   }, clk_i, rst_ni);
 
   // OBI signals/regs
@@ -127,16 +141,20 @@ module obi_sub#(
   genvar i;
   generate
     for(i = 0; i < 16; i++) begin
-      assign color_palette_o[i] = config_q[i / 4][8*(i % 4) +: 8];
+      assign color_palette_o[i] = config_q[i / 2][8*(i % 2) +: 16];
     end
   endgenerate
-  assign clk_divider_o = config_q[4][3:0];
-  assign disable_blink_o = config_q[4][4];
-  assign enable_glyph_ram_o = config_q[4][5];
+
+  assign clk_divider_o = config_q[8][3:0];
+  assign disable_blink_o = config_q[8][4];
+  assign enable_glyph_ram_o = config_q[8][5];
+  assign enable_frame_done_interrupt_o = config_q[8][6];
+  assign enable_o = config_q[8][7];
+
   assign obi_rsp_o.r.rdata = rdata_src_q == 'h0 ? read_config_q : (rdata_src_q == 'h1 ? ram_data_i[0]: ram_data_i[1]);
   assign obi_rsp_o.r.rid = rid_q;
   assign obi_rsp_o.r.err = err_q;
   // assign obi_rsp_o.r.r_option = ; // TODO is this one needed? See OBI definition in croc soc
   assign obi_rsp_o.gnt = '1;
   assign obi_rsp_o.rvalid = rvalid_q;
-endmodule;
+endmodule

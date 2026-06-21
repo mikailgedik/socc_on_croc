@@ -19,7 +19,7 @@ module tb_socc_on_croc;
   logic       clk;
   logic       rst_n;
   logic h_sync, v_sync;
-  logic [7:0] color;
+  logic [15:0] color;
   logic obi_done;
 
   //------------------ Generate Clock and Reset Signals ------------------//
