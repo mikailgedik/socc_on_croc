@@ -149,7 +149,7 @@ module obi_sub#(
   genvar i;
   generate
     for(i = 0; i < 16; i++) begin
-      assign color_palette_o[i] = config_q[i / 2][8*(i % 2) +: 16];
+      assign color_palette_o[i] = config_q[i / 2][16*(i % 2) +: 16];
     end
   endgenerate
 
