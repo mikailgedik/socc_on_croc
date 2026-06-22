@@ -16,12 +16,14 @@ module obi_sub#(
   input obi_req_t obi_req_i,
   output obi_rsp_t obi_rsp_o,
 
+  input logic frame_done_i,
+
   output logic [15:0] color_palette_o [15:0],
   output logic[3:0] clk_divider_o,
   output logic disable_blink_o,
   output logic enable_glyph_ram_o,
-  output logic enable_frame_done_interrupt_o,
   output logic enable_o,
+  output logic frame_done_interrupt_o,
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
@@ -56,6 +58,8 @@ module obi_sub#(
         16'h0011, // Color Index 01: darkblue
         16'h0000  // Color Index 00: black
   }, clk_i, rst_ni);
+
+  logic enable_frame_done_interrupt;
 
   // OBI signals/regs
   logic [ObiCfg.IdWidth-1:0]  rid_d, rid_q;
@@ -96,6 +100,10 @@ module obi_sub#(
     ram_be_o = '0;
     ram_we_o = '0;
     ram_selector_o = '0;
+
+    // Interrupt logic. Bit stays high, until an explicit write clears it!
+    // TODO ask TA whether this is correct this way
+    config_d[8][8] = config_q[8][8] | (frame_done_i & enable_frame_done_interrupt);
 
     if (lower_bits != '0) begin
       // Force all read/writes to be aligned to the bus width
@@ -148,8 +156,9 @@ module obi_sub#(
   assign clk_divider_o = config_q[8][3:0];
   assign disable_blink_o = config_q[8][4];
   assign enable_glyph_ram_o = config_q[8][5];
-  assign enable_frame_done_interrupt_o = config_q[8][6];
+  assign enable_frame_done_interrupt = config_q[8][6];
   assign enable_o = config_q[8][7];
+  assign frame_done_interrupt_o = config_q[8][8];
 
   assign obi_rsp_o.r.rdata = rdata_src_q == 'h0 ? read_config_q : (rdata_src_q == 'h1 ? ram_data_i[0]: ram_data_i[1]);
   assign obi_rsp_o.r.rid = rid_q;

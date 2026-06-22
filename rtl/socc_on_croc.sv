@@ -38,7 +38,13 @@ module socc_on_croc  #(
   localparam int RAM_ADDR_WIDTH = 'd11;
 
   localparam COUNTER_WIDTH = 10;
-  logic hsync_unbuffered, vsync_unbuffered, output_visible_unbuffered, frame_done_unbuffered;
+  logic hsync_unbuffered, vsync_unbuffered, output_visible_unbuffered;
+  // add 1 cycle latency, since we require two cycles (and obi_sub already adds one) of latency
+  // to stay synchronous with the rest of the socc_on_croc (we want it exactly at the last pixel)
+  logic frame_done[2:0];
+  `FF(frame_done[1], frame_done[0], '0, clk_i, rst_ni);
+  `FF(frame_done[2], frame_done[1], '0, clk_i, rst_ni);
+
   logic [COUNTER_WIDTH-1:0] screen_x, screen_y;
 
   logic [3:0] clk_divider;
@@ -70,7 +76,7 @@ module socc_on_croc  #(
     .visible_o(output_visible_unbuffered),
     .hpos_o(screen_x),
     .vpos_o(screen_y),
-    .frame_done_o(frame_done_unbuffered)
+    .frame_done_o(frame_done[0])
   );
 
   logic [RAM_ADDR_WIDTH:0] character_index;
@@ -96,8 +102,8 @@ module socc_on_croc  #(
   logic blink_disable;
   logic [15:0] color_palette [15:0];
   logic enable_glyph_ram;
-  logic enable_frame_done_interrupt;
   logic enable;
+  logic frame_done_interrupt;
 
   obi_sub #(
     .ObiCfg(ObiCfg),
@@ -112,12 +118,14 @@ module socc_on_croc  #(
     .obi_req_i(obi_req_i),
     .obi_rsp_o(obi_rsp_o),
 
+    .frame_done_i(frame_done[2]),
+
     .color_palette_o(color_palette),
     .clk_divider_o(clk_divider),
     .disable_blink_o(blink_disable),
     .enable_glyph_ram_o(enable_glyph_ram),
-    .enable_frame_done_interrupt_o(enable_frame_done_interrupt),
     .enable_o(enable),
+    .frame_done_interrupt_o(frame_done_interrupt),
 
     .ram_addr_o(ram_addr),
     .ram_data_o(ram_data),
@@ -208,13 +216,13 @@ module socc_on_croc  #(
     .color_o(color)
   );
 
-  logic [1:0][3:0] hvsync_delayed;
+  logic [1:0][2:0] hvsync_delayed;
 
-  `FF(hvsync_delayed[0], {frame_done_unbuffered, output_visible_unbuffered, hsync_unbuffered, vsync_unbuffered}, '0, clk_i, rst_ni);
+  `FF(hvsync_delayed[0], {output_visible_unbuffered, hsync_unbuffered, vsync_unbuffered}, '0, clk_i, rst_ni);
   `FF(hvsync_delayed[1], hvsync_delayed[0], '0, clk_i, rst_ni);
 
   assign hsync_o = hvsync_delayed[1][1] & enable;
   assign vsync_o = hvsync_delayed[1][0] & enable;
   assign color_o = color & {16{hvsync_delayed[1][2] & enable}};
-  assign frame_done_interrupt_o = hvsync_delayed[1][3] & enable;
+  assign frame_done_interrupt_o = frame_done_interrupt & enable;
 endmodule
