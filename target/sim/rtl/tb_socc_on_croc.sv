@@ -53,13 +53,17 @@ module tb_socc_on_croc;
 
   initial begin : basic_test
       eoc = 0;
-      $dumpfile("socc_on_croc.vcd");
+      $dumpfile("socc_on_croc.fst");
       $dumpvars(1,i_dut);
       $timeformat(-9, 2, " ns", 20);
       
       #1;
       wait (obi_done == '1);
-      DelayImpl#(.T_CLK(T_CLK))::capture_image($sformatf("./output-%03x.bmp", 0), color, h_sync, v_sync);
+
+      for(int i = 0; i < 8; i++) begin
+        DelayImpl#(.T_CLK(T_CLK))::capture_image($sformatf("./output-%03d.bmp", i), color, h_sync, v_sync);
+        $display("Frame %x", i);
+      end
 
       eoc = 1;
 

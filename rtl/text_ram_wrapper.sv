@@ -2,7 +2,6 @@ module text_ram_wrapper#(
     parameter int ADDRESS_WIDTH = 32'd0,
     parameter int DATA_WIDTH = 32'd0
 ) (
-    // TODO reset in sram?
     input logic clk_i,
     input logic rst_ni,
     
@@ -47,7 +46,6 @@ module text_ram_wrapper#(
     assign be = {port1_be_i, {(DATA_WIDTH/8){1'b1}}};
     assign port1_data_o = rdata[1];
 
-    // TODO tc_sram_impl vs tc_sram ?
     tc_sram_impl #(
         .NumWords  ( 1 << ADDRESS_WIDTH ),
         .DataWidth ( DATA_WIDTH ),
@@ -59,7 +57,6 @@ module text_ram_wrapper#(
 
         .impl_i(),
         .impl_o(),
-        // TODO are we allowed to pull this to high all the time?
         .req_i({1'd1, 1'd1}),
         .we_i(we),
         .addr_i(addr),

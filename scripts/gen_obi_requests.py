@@ -82,7 +82,7 @@ reqs.append(ObiR(0x18, 0xf81ff800, True))
 reqs.append(ObiR(0x1C, 0xffffffe0, True))
 
 
-reqs.append(ObiR(0x20, 0b11010000, True))
+reqs.append(ObiR(0x20, 0b0000_0010_0000_0000_1100_0000, True))
 
 FILE_CONTENT = """
 // Copyright 2026 ETH Zurich.

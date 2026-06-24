@@ -5,7 +5,6 @@ module obi_sub#(
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
   parameter int RAM_ADDR_WIDTH = 'h0,
-  parameter bit [ObiCfg.AddrWidth-1:0] OBI_ADDRESS_OFFSET = '0,
   // Derived parameter, do not overwrite!
   parameter int DATAWIDTH_CLOG = $clog2(ObiCfg.DataWidth/8) //The lower bits must be 0 (every write/read must be aligned with ObiCfg.DataWidth/8)
 ) (
@@ -20,10 +19,10 @@ module obi_sub#(
 
   output logic [15:0] color_palette_o [15:0],
   output logic[3:0] clk_divider_o,
-  output logic disable_blink_o,
   output logic enable_glyph_ram_o,
   output logic enable_o,
   output logic frame_done_interrupt_o,
+  output logic [7:0] blink_threshold_o,
 
   output logic[RAM_ADDR_WIDTH-1:0] ram_addr_o,
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
@@ -70,22 +69,19 @@ module obi_sub#(
   `FF(err_q, err_d, 'b0, clk_i, rst_ni);
   logic [ObiCfg.DataWidth-1:0] read_config_d, read_config_q;
   `FF(read_config_q, read_config_d, 'b0, clk_i, rst_ni);
-  logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] rdata_src_d, rdata_src_q;
+  logic [1:0] rdata_src_d, rdata_src_q;
   `FF(rdata_src_q, rdata_src_d, 'b0, clk_i, rst_ni);
   
   always_comb begin : obi_communication
-    logic [ObiCfg.AddrWidth-1-RAM_ADDR_WIDTH-DATAWIDTH_CLOG:0] destination_selector;
+    logic [1:0] destination_selector;
     logic [RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1 - DATAWIDTH_CLOG:0] dest_addr;
     logic [DATAWIDTH_CLOG-1:0] lower_bits;
     logic [ObiCfg.AddrWidth-1:0] normalized_address;
 
-    // TODO is this really necessary? Can't we just ignore the upper bits?
-    // Ask TA
-    normalized_address = obi_req_i.a.addr - OBI_ADDRESS_OFFSET;
-
-    destination_selector = normalized_address[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
-    dest_addr = normalized_address[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
-    lower_bits = normalized_address[DATAWIDTH_CLOG-1:0];
+    // Truncate upper bits. We may assume that a transaction does indeed go to our peripheral if it arrives here
+    destination_selector = obi_req_i.a.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG][1:0];
+    dest_addr = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
+    lower_bits = obi_req_i.a.addr[DATAWIDTH_CLOG-1:0];
 
     config_d = config_q;
     rdata_src_d = destination_selector;
@@ -102,7 +98,6 @@ module obi_sub#(
     ram_selector_o = '0;
 
     // Interrupt logic. Bit stays high, until an explicit write clears it!
-    // TODO ask TA whether this is correct this way
     config_d[8][8] = config_q[8][8] | (frame_done_i & enable_frame_done_interrupt);
 
     if (lower_bits != '0) begin
@@ -154,16 +149,16 @@ module obi_sub#(
   endgenerate
 
   assign clk_divider_o = config_q[8][3:0];
-  assign disable_blink_o = config_q[8][4];
+  // assign disable_blink_o = config_q[8][4];
   assign enable_glyph_ram_o = config_q[8][5];
   assign enable_frame_done_interrupt = config_q[8][6];
   assign enable_o = config_q[8][7];
   assign frame_done_interrupt_o = config_q[8][8];
+  assign blink_threshold_o = config_q[8][23:16];
 
   assign obi_rsp_o.r.rdata = rdata_src_q == 'h0 ? read_config_q : (rdata_src_q == 'h1 ? ram_data_i[0]: ram_data_i[1]);
   assign obi_rsp_o.r.rid = rid_q;
   assign obi_rsp_o.r.err = err_q;
-  // assign obi_rsp_o.r.r_option = ; // TODO is this one needed? See OBI definition in croc soc
   assign obi_rsp_o.gnt = '1;
   assign obi_rsp_o.rvalid = rvalid_q;
 endmodule

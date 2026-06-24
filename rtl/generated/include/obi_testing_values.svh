@@ -3464,7 +3464,7 @@ function obi_orders_t get_obi_order(logic [31:0] idx);
 		'd3444: get_obi_order = {32'd20, 32'd134153216, 32'd4026531841};
 		'd3445: get_obi_order = {32'd24, 32'd4162844672, 32'd4026531841};
 		'd3446: get_obi_order = {32'd28, 32'd4294967264, 32'd4026531841};
-		'd3447: get_obi_order = {32'd32, 32'd208, 32'd4026531841};
+		'd3447: get_obi_order = {32'd32, 32'd131264, 32'd4026531841};
     endcase
 endfunction
 

@@ -5,7 +5,6 @@ module socc_on_croc  #(
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   parameter type obi_req_t = logic,
   parameter type obi_rsp_t = logic,
-  parameter bit[ObiCfg.AddrWidth-1:0] OBI_ADDRESS_OFFSET = '0,
 
   // Horizontal timing parameters (in pixels)
   parameter int H_ACTIVE = 640,       // Display width
@@ -54,6 +53,29 @@ module socc_on_croc  #(
   assign clk_counter_d = clk_counter_q == clk_divider ? 'h0 : clk_counter_q + 'h1;
   assign clk_enable = clk_counter_q == 'h0;
 
+  logic blinking;
+  logic disable_blink;
+  logic [7:0] blink_threshold;
+  logic [8:0] blink_counter_d, blink_counter_q;
+  `FF(blink_counter_q, blink_counter_d, '0, clk_i, rst_ni);
+
+  // Counts inside intervall [0, 2 * blink_threshold[
+  // if x inside of [0, blink_threshold[ -> No blink
+  // if x inside of [blink_threshold, 2 * blink_threshold[ -> blink
+  // Make sure that the transition happens exactly when the frame is done
+  always_comb begin: blink_assign
+    blink_counter_d = blink_counter_q;
+    if (frame_done[2] == 'h1) begin
+      blink_counter_d = blink_counter_q + 'h1;
+      if (blink_counter_q + 'h1 >= {blink_threshold, 1'h0}) begin
+        blink_counter_d = '0;
+      end
+    end
+  end
+
+  assign blinking = (blink_counter_q >= {1'h0, blink_threshold});
+  assign disable_blink = blink_threshold == '0;
+
   sync_generator #(
     .COUNTER_WIDTH(COUNTER_WIDTH),
 
@@ -87,8 +109,8 @@ module socc_on_croc  #(
     .PIXELS_PER_ROW(H_ACTIVE),
     .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH)
   ) i_address_generator (
-    .screen_x(screen_x),
-    .screen_y(screen_y),
+    .screen_x_i(screen_x),
+    .screen_y_i(screen_y),
     .character_index_o(character_index)
   );
 
@@ -99,7 +121,6 @@ module socc_on_croc  #(
   logic ram_we;
   logic ram_selector;
 
-  logic blink_disable;
   logic [15:0] color_palette [15:0];
   logic enable_glyph_ram;
   logic enable;
@@ -109,8 +130,7 @@ module socc_on_croc  #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
     .obi_rsp_t(obi_rsp_t),
-    .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH),
-    .OBI_ADDRESS_OFFSET(OBI_ADDRESS_OFFSET)
+    .RAM_ADDR_WIDTH(RAM_ADDR_WIDTH)
   ) i_obi_sub(
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -122,10 +142,10 @@ module socc_on_croc  #(
 
     .color_palette_o(color_palette),
     .clk_divider_o(clk_divider),
-    .disable_blink_o(blink_disable),
     .enable_glyph_ram_o(enable_glyph_ram),
     .enable_o(enable),
     .frame_done_interrupt_o(frame_done_interrupt),
+    .blink_threshold_o(blink_threshold),
 
     .ram_addr_o(ram_addr),
     .ram_data_o(ram_data),
@@ -206,13 +226,11 @@ module socc_on_croc  #(
   logic [15:0] color;
   color_generator #(
   ) i_color_generator (
-    .clk_i(clk_i),
-    .rst_ni(rst_ni),
     .input_pixel_i(one_bit_pixel),
     .color_blink_i(color_blink_delayed),
     .color_palette_i(color_palette),
-    .blink_disable_i(blink_disable),
-    .clk_enable_i(clk_enable),
+    .blink_disable_i(disable_blink),
+    .is_blinking_i(blinking),
     .color_o(color)
   );
 

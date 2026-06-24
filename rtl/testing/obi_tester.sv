@@ -45,8 +45,7 @@ module obi_tester #(
   socc_on_croc #(
     .ObiCfg(ObiCfg),
     .obi_req_t(obi_req_t),
-    .obi_rsp_t(obi_rsp_t),
-    .OBI_ADDRESS_OFFSET('0)
+    .obi_rsp_t(obi_rsp_t)
   ) socc (
     .clk_i (clk_i),
     .rst_ni    (rst_ni),
