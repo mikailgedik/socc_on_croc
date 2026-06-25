@@ -76,10 +76,9 @@ module obi_sub#(
     logic [1:0] destination_selector;
     logic [RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1 - DATAWIDTH_CLOG:0] dest_addr;
     logic [DATAWIDTH_CLOG-1:0] lower_bits;
-    logic [ObiCfg.AddrWidth-1:0] normalized_address;
 
     // Truncate upper bits. We may assume that a transaction does indeed go to our peripheral if it arrives here
-    destination_selector = obi_req_i.a.addr[ObiCfg.AddrWidth-1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG][1:0];
+    destination_selector = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG+1:RAM_ADDR_WIDTH+DATAWIDTH_CLOG];
     dest_addr = obi_req_i.a.addr[RAM_ADDR_WIDTH+DATAWIDTH_CLOG - 1:DATAWIDTH_CLOG];
     lower_bits = obi_req_i.a.addr[DATAWIDTH_CLOG-1:0];
 
