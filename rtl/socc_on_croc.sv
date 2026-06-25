@@ -42,7 +42,9 @@ module socc_on_croc  #(
   // to stay synchronous with the rest of the socc_on_croc (we want it exactly at the last pixel)
   logic frame_done[2:0];
   `FF(frame_done[1], frame_done[0], '0, clk_i, rst_ni);
-  `FF(frame_done[2], frame_done[1], '0, clk_i, rst_ni);
+  // frame_done[0] will be asserted for clk_counter_q + 1 cycles.
+  // With this trick, we'll make sure that it's assert only on the very last non-divided clock cycle
+  `FF(frame_done[2], frame_done[1] & ! frame_done[0], '0, clk_i, rst_ni);
 
   logic [COUNTER_WIDTH-1:0] screen_x, screen_y;
 

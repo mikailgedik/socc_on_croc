@@ -61,7 +61,7 @@ module tb_socc_on_croc;
       wait (obi_done == '1);
 
       for(int i = 0; i < 8; i++) begin
-        DelayImpl#(.T_CLK(T_CLK))::capture_image($sformatf("./output-%03d.bmp", i), color, h_sync, v_sync);
+        DelayImpl#(.T_CLK(T_CLK * 4))::capture_image($sformatf("./output-%03d.bmp", i), color, h_sync, v_sync);
         $display("Frame %x", i);
       end
 
