@@ -54,18 +54,13 @@ module glyph_ram_wrapper#(
     assign be = {port1_be_i, {(DATA_WIDTH/8){1'b1}}};
     assign port1_data_o = rdata;
 
-    tc_sram_impl #(
-        .NumWords  ( 1 << ADDRESS_WIDTH ),
-        .DataWidth ( DATA_WIDTH ),
-        .NumPorts  (  1 ),
-        .Latency   (  1 )
-    ) i_sram (
+    ram_muxer #(
+        .ADDRESS_WIDTH(ADDRESS_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) i_ram_muxer (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
 
-        .impl_i(),
-        .impl_o(),
-        .req_i(1'd1),
         .we_i(we[port1_en_i]),
         .addr_i(addr[port1_en_i]),
 
