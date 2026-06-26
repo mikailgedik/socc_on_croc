@@ -120,6 +120,7 @@ module socc_on_croc  #(
   logic [ObiCfg.DataWidth-1:0] ram_data;
   logic [1:0][ObiCfg.DataWidth-1:0] ram_data_output;
   logic [(ObiCfg.DataWidth/8)-1:0]ram_be;
+  logic ram_en;
   logic ram_we;
   logic ram_selector;
 
@@ -153,6 +154,7 @@ module socc_on_croc  #(
     .ram_data_o(ram_data),
     .ram_be_o(ram_be),
     .ram_data_i(ram_data_output),
+    .ram_en_o(ram_en),
     .ram_we_o(ram_we),
     .ram_selector_o(ram_selector)
   );
@@ -175,6 +177,7 @@ module socc_on_croc  #(
     .port1_data_o(ram_data_output[0]),
     .port1_data_i(ram_data),
     .port1_be_i(ram_be),
+    .port1_en_i(ram_en),
     .port1_we_i(ram_we && (ram_selector == 'd0))
   );
 
@@ -205,6 +208,7 @@ module socc_on_croc  #(
     .port1_data_o(ram_data_output[1]),
     .port1_data_i(ram_data),
     .port1_be_i(ram_be),
+    .port1_en_i(ram_en),
     .port1_we_i(ram_we && (ram_selector == 'd1))
   );
 

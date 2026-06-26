@@ -14,6 +14,7 @@ module text_ram_wrapper#(
     output logic [DATA_WIDTH-1:0] port1_data_o,
     input logic [DATA_WIDTH-1:0] port1_data_i,
     input logic [DATA_WIDTH/8-1:0] port1_be_i,
+    input logic port1_en_i,
     input logic port1_we_i
 );
     `include "common_cells/registers.svh"
@@ -35,21 +36,21 @@ module text_ram_wrapper#(
     logic [1:0][ADDRESS_WIDTH-1:0] addr;
     logic [1:0][DATA_WIDTH-1:0] wdata;
     logic [1:0][DATA_WIDTH/8-1:0] be;
-    logic [1:0][DATA_WIDTH-1:0] rdata;
+    logic [DATA_WIDTH-1:0] rdata;
 
-    assign port0_ascii_o = lower_upper_q == 'h0 ? rdata[0][7:0] : rdata[0][23:16];
-    assign port0_color_blink_o = lower_upper_q == 'h0 ? rdata[0][15:8] : rdata[0][31:24];
+    assign port0_ascii_o = lower_upper_q == 'h0 ? rdata[7:0] : rdata[23:16];
+    assign port0_color_blink_o = lower_upper_q == 'h0 ? rdata[15:8] : rdata[31:24];
 
     assign we = {port1_we_i, 1'b0};
     assign addr = {port1_addr_i, port0_addr};
     assign wdata = {port1_data_i, (DATA_WIDTH)'(0)};
     assign be = {port1_be_i, {(DATA_WIDTH/8){1'b1}}};
-    assign port1_data_o = rdata[1];
+    assign port1_data_o = rdata;
 
     tc_sram_impl #(
         .NumWords  ( 1 << ADDRESS_WIDTH ),
         .DataWidth ( DATA_WIDTH ),
-        .NumPorts  (  2 ),
+        .NumPorts  (  1 ),
         .Latency   (  1 )
     ) i_sram (
         .clk_i(clk_i),
@@ -57,12 +58,12 @@ module text_ram_wrapper#(
 
         .impl_i(),
         .impl_o(),
-        .req_i({1'd1, 1'd1}),
-        .we_i(we),
-        .addr_i(addr),
+        .req_i(1'd1),
+        .we_i(we[port1_en_i]),
+        .addr_i(addr[port1_en_i]),
 
-        .wdata_i(wdata),
-        .be_i(be),
+        .wdata_i(wdata[port1_en_i]),
+        .be_i(be[port1_en_i]),
         .rdata_o(rdata)
     );
 

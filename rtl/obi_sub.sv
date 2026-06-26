@@ -28,6 +28,7 @@ module obi_sub#(
   output logic[ObiCfg.DataWidth-1:0] ram_data_o,
   output logic[(ObiCfg.DataWidth/8)-1:0] ram_be_o,
   input  logic[1:0][ObiCfg.DataWidth-1:0] ram_data_i,
+  output logic ram_en_o,
   output logic ram_we_o,
   output logic ram_selector_o
 );
@@ -93,6 +94,7 @@ module obi_sub#(
     ram_addr_o = '0;
     ram_data_o = '0;
     ram_be_o = '0;
+    ram_en_o = '0;
     ram_we_o = '0;
     ram_selector_o = '0;
 
@@ -122,6 +124,7 @@ module obi_sub#(
       end
     end else begin
       ram_addr_o = dest_addr;
+      ram_en_o = 'h1;
       ram_we_o = obi_req_i.a.we;
       if (obi_req_i.a.we == '0) begin
         // Nothing to do - reading is done autmatically
@@ -133,6 +136,7 @@ module obi_sub#(
           'h2: ram_selector_o = 1'd1;
           default: begin
             err_d = '1;
+            ram_en_o = '0;
             ram_we_o = '0;
           end
         endcase
