@@ -3,9 +3,12 @@
 Just run the script, e.g.
 
 ```sh
-python ttf_to_svrom.py --font-path CLEagleIII/Px437_CL_EagleIII_8x16.ttf --output-sv ./out/CLEagleIII_8x16_rom.sv
+./ttf2bitmap.py
+./bitmap2svrom.py
+dd if=raw.bin count=1 bs=2048 of=lower.bin
+dd if=raw.bin count=1 bs=2048 of=upper.bin skip=1
 ```
-
+You want to use the script 'scripts/gen_bootrom.py' to generate the actual font-roms. You can generate the lower and upper part separately, to avoid congestion during routing
 ## License
 
 CL-GD5320 ('Eagle III') VGA" font by VileR is licensed under CC BY-SA 4.0. 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import math
 import os
@@ -14,6 +15,7 @@ def binary_to_svrom(input_bitmaps, output_rom, module_name="font_rom"):
     char_names = []
     current_char = None
     char_bitmap = []
+    raw_output = bytearray()
 
     for line in lines:
         if line.startswith("CP437:"):
@@ -54,7 +56,8 @@ def binary_to_svrom(input_bitmaps, output_rom, module_name="font_rom"):
 
             for i, row_str in enumerate(data_rows):
                 f.write(f"                {row_bits}'d{i}: font_data = {row_width}'b{row_str};\n")
-            
+                # Weird syntax to reverse string
+                raw_output.append(int(row_str[::-1], 2))
             f.write(f"                default: font_data = {row_width}'b" + "0" * row_width + ";\n")
             f.write("            endcase\n")
             f.write("        end\n\n")
@@ -63,6 +66,9 @@ def binary_to_svrom(input_bitmaps, output_rom, module_name="font_rom"):
         f.write("    endcase\n")
         f.write("end\n\n")
         f.write("endmodule\n")
+
+    with open("raw.bin", "wb") as f:
+        f.write(raw_output)
     print(f"Successfully generated SystemVerilog ROM '{output_rom}' containing {len(rom_data)} characters.")
 
 

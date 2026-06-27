@@ -33,19 +33,32 @@ module glyph_rom_wrapper#(
     end
 
     // On clk cycle of latency, since RAM also has one clk cycle latency
-    logic [DATA_WIDTH-1:0] rdata_unbuffered, rdata;
+    logic [DATA_WIDTH-1:0] rdata_unbuffered, rdata_unbuffered_lower, rdata_unbuffered_upper, rdata;
     `FF(rdata, rdata_unbuffered, '0, clk_i, rst_ni);
 
     assign port0_pixel_o = rdata[bit_shift_q];
+    assign rdata_unbuffered = port0_addr[9] ? rdata_unbuffered_upper : rdata_unbuffered_lower;
 
-    font_rom# (
+    //Font ROM is split, so that the routing is not over-congested
+    font_rom_lower# (
         .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
         .DataWidth(DATA_WIDTH)
-    ) i_font_rom (
+    ) i_font_rom_lower (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .req_i('1),
         .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
-        .data_o(rdata_unbuffered)
+        .data_o(rdata_unbuffered_lower)
+    );
+
+    font_rom_upper# (
+        .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
+        .DataWidth(DATA_WIDTH)
+    ) i_font_rom_upper (
+        .clk_i(clk_i),
+        .rst_ni(rst_ni),
+        .req_i('1),
+        .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
+        .data_o(rdata_unbuffered_upper)
     );
 endmodule
