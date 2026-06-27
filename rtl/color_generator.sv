@@ -18,7 +18,7 @@ module color_generator #(
         fg_color = color_palette_i[color_blink_i[3:0]];
         bg_color = blink_disable_i ? color_palette_i[color_blink_i[7:4]] : color_palette_i[{1'b0, color_blink_i[6:4] }];
         
-        is_blinking = is_blinking_i && !blink_disable_i;
+        is_blinking = is_blinking_i && !blink_disable_i && color_blink_i[7];
 
         if(input_pixel_i == 'b1 && !is_blinking) begin
             color_o = fg_color;
