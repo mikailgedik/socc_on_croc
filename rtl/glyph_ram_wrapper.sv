@@ -56,7 +56,9 @@ module glyph_ram_wrapper#(
 
     ram_muxer #(
         .ADDRESS_WIDTH(ADDRESS_WIDTH),
-        .DATA_WIDTH(DATA_WIDTH)
+        .DATA_WIDTH(DATA_WIDTH),
+         // instantiate only 2 instead of 4, since 32Ki bits are enough
+        .SMALLER_RAMS(2)
     ) i_ram_muxer (
         .clk_i(clk_i),
         .rst_ni(rst_ni),

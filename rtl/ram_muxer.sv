@@ -2,7 +2,13 @@
 
 module ram_muxer#(
     parameter int ADDRESS_WIDTH = 32'd0,
-    parameter int DATA_WIDTH = 32'd0
+    parameter int DATA_WIDTH = 32'd0,
+    
+    // We mux multiple 512-rams to one big one
+    parameter int UPPER_BITS = ADDRESS_WIDTH - 9,
+    // SMALLER_RAMs can be overwritten - will lead to undefined behaviour if upper
+    // range is written to
+    parameter int SMALLER_RAMS = 1 << UPPER_BITS
 ) (
     input logic clk_i,
     input logic rst_ni,
@@ -13,10 +19,6 @@ module ram_muxer#(
     input logic [DATA_WIDTH/8-1:0] be_i,
     input logic we_i
 );
-    // We mux multiple 512-rams to one big one
-    localparam int UPPER_BITS = ADDRESS_WIDTH - 9;
-    localparam int SMALLER_RAMS = 1 << UPPER_BITS;
-
     logic [9-1:0] lower_addr;
     logic [UPPER_BITS-1:0] selected_ram, selected_ram_delayed;
     
