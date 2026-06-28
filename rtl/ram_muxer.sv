@@ -5,6 +5,7 @@ module ram_muxer#(
     parameter int DATA_WIDTH = 32'd0,
     
     // We mux multiple 512-rams to one big one
+    // DO NOT OVERRIDE
     parameter int UPPER_BITS = ADDRESS_WIDTH - 9,
     // SMALLER_RAMs can be overwritten - will lead to undefined behaviour if upper
     // range is written to
@@ -26,8 +27,8 @@ module ram_muxer#(
     assign selected_ram = addr_i[ADDRESS_WIDTH-1:9];
     `FF(selected_ram_delayed, selected_ram, '0, clk_i, rst_ni)
 
-
-    assign rdata_o = unmuxed_rdata[selected_ram_delayed];
+    // selected_ram_delayed can be 
+    assign rdata_o = 32'(selected_ram_delayed) < SMALLER_RAMS ? unmuxed_rdata[selected_ram_delayed] : '0;
     logic [SMALLER_RAMS-1:0][DATA_WIDTH-1:0] unmuxed_rdata;
 
     genvar i;

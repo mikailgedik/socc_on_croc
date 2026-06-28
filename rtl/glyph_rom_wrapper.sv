@@ -33,32 +33,56 @@ module glyph_rom_wrapper#(
     end
 
     // On clk cycle of latency, since RAM also has one clk cycle latency
-    logic [DATA_WIDTH-1:0] rdata_unbuffered, rdata_unbuffered_lower, rdata_unbuffered_upper, rdata;
+    logic [DATA_WIDTH-1:0] rdata_unbuffered, rdata;
+    logic [3:0][DATA_WIDTH-1:0] rdata_unbuffered_subrom;
     `FF(rdata, rdata_unbuffered, '0, clk_i, rst_ni);
 
     assign port0_pixel_o = rdata[bit_shift_q];
-    assign rdata_unbuffered = port0_addr[9] ? rdata_unbuffered_upper : rdata_unbuffered_lower;
+    assign rdata_unbuffered = rdata_unbuffered_subrom[port0_addr[9:8]];
 
     //Font ROM is split, so that the routing is not over-congested
-    font_rom_lower# (
+    font_rom0# (
         .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
         .DataWidth(DATA_WIDTH)
-    ) i_font_rom_lower (
+    ) i_font_rom0 (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .req_i('1),
         .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
-        .data_o(rdata_unbuffered_lower)
+        .data_o(rdata_unbuffered_subrom[0])
     );
 
-    font_rom_upper# (
+    font_rom1# (
         .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
         .DataWidth(DATA_WIDTH)
-    ) i_font_rom_upper (
+    ) i_font_rom1 (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .req_i('1),
         .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
-        .data_o(rdata_unbuffered_upper)
+        .data_o(rdata_unbuffered_subrom[1])
+    );
+
+    //Font ROM is split, so that the routing is not over-congested
+    font_rom2# (
+        .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
+        .DataWidth(DATA_WIDTH)
+    ) i_font_rom2 (
+        .clk_i(clk_i),
+        .rst_ni(rst_ni),
+        .req_i('1),
+        .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
+        .data_o(rdata_unbuffered_subrom[2])
+    );
+
+    font_rom3# (
+        .AddrWidth(ADDRESS_WIDTH + $clog2(DATA_WIDTH / 8)),
+        .DataWidth(DATA_WIDTH)
+    ) i_font_rom3 (
+        .clk_i(clk_i),
+        .rst_ni(rst_ni),
+        .req_i('1),
+        .addr_i({port0_addr, ($clog2(DATA_WIDTH / 8))'(1'h0) }),
+        .data_o(rdata_unbuffered_subrom[3])
     );
 endmodule

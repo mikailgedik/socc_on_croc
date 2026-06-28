@@ -245,8 +245,11 @@ module socc_on_croc  #(
   `FF(hvsync_delayed[0], {output_visible_unbuffered, hsync_unbuffered, vsync_unbuffered}, '0, clk_i, rst_ni);
   `FF(hvsync_delayed[1], hvsync_delayed[0], '0, clk_i, rst_ni);
 
-  assign hsync_o = hvsync_delayed[1][1] & enable;
-  assign vsync_o = hvsync_delayed[1][0] & enable;
-  assign color_o = color & {16{hvsync_delayed[1][2] & enable}};
+  logic [17:0] output_delayer;
+  `FF(output_delayer, {color & {16{hvsync_delayed[1][2] & enable}}, hvsync_delayed[1][0] & enable, hvsync_delayed[1][1] & enable}, '0, clk_i, rst_ni);
+  assign hsync_o = output_delayer[0];
+  assign vsync_o = output_delayer[1];
+  assign color_o = output_delayer[17:2];
+
   assign frame_done_interrupt_o = frame_done_interrupt & enable;
 endmodule
