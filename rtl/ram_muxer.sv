@@ -28,8 +28,8 @@ module ram_muxer#(
     `FF(selected_ram_delayed, selected_ram, '0, clk_i, rst_ni)
 
     // selected_ram_delayed can be 
-    assign rdata_o = 32'(selected_ram_delayed) < SMALLER_RAMS ? unmuxed_rdata[selected_ram_delayed] : '0;
     logic [SMALLER_RAMS-1:0][DATA_WIDTH-1:0] unmuxed_rdata;
+    assign rdata_o = 32'(selected_ram_delayed) < SMALLER_RAMS ? unmuxed_rdata[selected_ram_delayed] : '0;
 
     genvar i;
     generate

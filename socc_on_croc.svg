@@ -2,12 +2,12 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="403.992mm"
-   height="155mm"
-   viewBox="0 0 403.99199 155"
+   width="402.51389mm"
+   height="152.57173mm"
+   viewBox="0 0 402.51387 152.57173"
    version="1.1"
    id="svg1"
-   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
    sodipodi:docname="socc_on_croc.svg"
    inkscape:export-filename="socconcroc.png"
    inkscape:export-xdpi="125.75"
@@ -26,21 +26,21 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="1.0259928"
-     inkscape:cx="738.79661"
-     inkscape:cy="328.46234"
-     inkscape:window-width="2560"
-     inkscape:window-height="1371"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
+     inkscape:zoom="0.50377973"
+     inkscape:cx="847.59265"
+     inkscape:cy="460.51872"
+     inkscape:window-width="1710"
+     inkscape:window-height="1073"
+     inkscape:window-x="92"
+     inkscape:window-y="963"
+     inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      showgrid="true">
     <inkscape:grid
        id="grid12"
        units="mm"
        originx="25.375095"
-       originy="-6.7500043"
+       originy="-7.5696462"
        spacingx="0.99999997"
        spacingy="1.0000001"
        empcolor="#0099e5"
@@ -53,6 +53,25 @@
   </sodipodi:namedview>
   <defs
      id="defs1">
+    <marker
+       style="overflow:visible"
+       id="marker67"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path67" />
+    </marker>
     <marker
        style="overflow:visible"
        id="marker59"
@@ -406,7 +425,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(14.779997,-25.368631)">
+     transform="translate(14.779997,-26.188273)">
     <rect
        style="mix-blend-mode:normal;fill:#80f3ff;fill-opacity:1;stroke:#000000;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;paint-order:normal"
        id="rect1-5"
@@ -437,14 +456,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="236.57632"
+       x="227.75844"
        y="91.618851"
        id="text2-3-5-3-1-0"><tspan
          id="tspan2-05-7-9-55-6"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
-         x="236.57632"
+         x="227.75844"
          y="91.618851"
-         sodipodi:role="line">Glyph RAM</tspan></text>
+         sodipodi:role="line">Glyph RAM Wrapper</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
@@ -624,7 +643,7 @@
        y="-81.381386"
        ry="2.0000007" />
     <rect
-       style="fill:#deecec;fill-opacity:1;stroke:#000000;stroke-width:0.25;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:#80f3ff;fill-opacity:1;stroke:#000000;stroke-width:0.25;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect1-8-3-8-51-7"
        width="10.012403"
        height="15.999108"
@@ -910,14 +929,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="163.07916"
+       x="154.28117"
        y="56.695045"
        id="text2-3-5-3"><tspan
          id="tspan2-05-7-9"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
-         x="163.07916"
+         x="154.28117"
          y="56.695045"
-         sodipodi:role="line">Text RAM</tspan></text>
+         sodipodi:role="line">Text RAM Wrapper</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
@@ -965,13 +984,13 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="173.56461"
+       x="183.07959"
        y="76.583359"
        id="text2-0-4-33-4"><tspan
          sodipodi:role="line"
          id="tspan14"
-         x="173.56461"
-         y="76.583359">Char Index</tspan></text>
+         x="183.07959"
+         y="76.583359">ASCII</tspan></text>
     <path
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.25;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="m 144.60922,81.618639 1.99999,-5e-6 2,1 -2,1 -1.99999,6e-6 -2.00001,-1.000006 z"
@@ -1010,7 +1029,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
          x="225.39699"
          y="100.63644"
-         sodipodi:role="line">Char Index</tspan></text>
+         sodipodi:role="line">ASCII</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
@@ -1047,12 +1066,12 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="250.73068"
+       x="250.06471"
        y="101.58337"
        id="text2-4-1-6-6"><tspan
          id="tspan2-0-0-6-8"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
-         x="250.73068"
+         x="250.06471"
          y="101.58337"
          sodipodi:role="line">1-bit Pixel</tspan></text>
     <path
@@ -1098,7 +1117,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
          x="225.39699"
          y="67.303207"
-         sodipodi:role="line">Char Index</tspan></text>
+         sodipodi:role="line">ASCII</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
@@ -1124,12 +1143,12 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="242.95546"
+       x="242.06471"
        y="74.870903"
        id="text2-4-1-6-6-5"><tspan
          id="tspan2-0-0-6-8-1"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
-         x="242.95546"
+         x="242.06471"
          y="74.870903"
          sodipodi:role="line">1-bit Pixel</tspan></text>
     <path
@@ -1218,12 +1237,12 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-dasharray:none;stroke-dashoffset:0"
-       x="97.473648"
+       x="96.179573"
        y="124.87936"
        id="text2-4-9-7-5"><tspan
          id="tspan2-0-2-0-4"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke-width:0;stroke-dasharray:none"
-         x="97.473648"
+         x="96.179573"
          y="124.87936"
          sodipodi:role="line">Clock Enable</tspan></text>
     <text
@@ -1623,8 +1642,8 @@
        y="58.59388"
        ry="3.5" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-dasharray:none"
-       d="m 346.53674,73.618634 h 4.05833"
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-dasharray:none;marker-end:url(#marker67)"
+       d="m 346.53674,73.618634 2.14783,6e-6"
        id="path31"
        sodipodi:nodetypes="cc" />
     <text
@@ -1985,7 +2004,7 @@
        d="m 165.59596,46.53792 h 9.99828"
        id="path54-4-5-2" />
     <rect
-       style="fill:#deecec;fill-opacity:1;stroke:#000000;stroke-width:0.22477;stroke-dasharray:none;stroke-dashoffset:0"
+       style="fill:#80f3ff;fill-opacity:1;stroke:#000000;stroke-width:0.22477;stroke-dasharray:none;stroke-dashoffset:0"
        id="rect1-8-3-8-51-7-55"
        width="10.037633"
        height="12.900231"
